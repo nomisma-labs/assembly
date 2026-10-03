@@ -6,6 +6,8 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-03
+
 ### Added
 
 - Assembly/context composition, bidirectional relay, and delegate callback interfaces in `nom`.
