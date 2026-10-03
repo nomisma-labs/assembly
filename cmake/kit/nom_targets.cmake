@@ -28,8 +28,9 @@ endfunction()
 # nom_lib(<name> [STATIC | SHARED] [SOURCES <files>] [HEADERS <files>] [MODULES <files>] [BASE_DIR <dir>]
 #                 [PUBLIC_DEPS <targets>] [PRIVATE_DEPS <targets>])
 #
-# Creates <name> and its alias nom::<name>. Without SOURCES or MODULES it is an INTERFACE
-# (header-only) library. STATIC/SHARED selects compiled linkage explicitly; otherwise
+# Creates <name> and its alias nom::<name>. Nomisma library APIs are declared in MODULES.
+# Without SOURCES or MODULES it is an INTERFACE target for macros or dependency adapters.
+# STATIC/SHARED selects compiled linkage explicitly; otherwise
 # BUILD_SHARED_LIBS supplies the default. HEADERS and MODULES become file sets rooted at BASE_DIR (default:
 # <project>/core), so they install under the same path they are included by: <name>/file.h.
 function(nom_lib name)

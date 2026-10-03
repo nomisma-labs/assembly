@@ -10,7 +10,6 @@
 #   option                   variable            default             controls
 #   <PROJECT>_BUILD_TESTS    nom_build_tests     ON when top level   tests/
 #   <PROJECT>_BUILD_APPS     nom_build_apps      ON when top level   apps/, including the sandbox
-#   <PROJECT>_BUILD_MODULES  nom_build_modules   ON                  C++ modules and their importers
 #   <PROJECT>_INSTALL        nom_install         ON                  install rules and the package config
 function(nom_project_options)
     # Shared across composed repos; custom presets can inherit their parent's app selection.
@@ -18,9 +17,8 @@ function(nom_project_options)
     string(TOUPPER ${PROJECT_NAME} prefix)
     option(${prefix}_BUILD_TESTS "Build the tests" ${PROJECT_IS_TOP_LEVEL})
     option(${prefix}_BUILD_APPS "Build the apps, including the sandbox" ${PROJECT_IS_TOP_LEVEL})
-    option(${prefix}_BUILD_MODULES "Build the C++ modules" ON)
     option(${prefix}_INSTALL "Generate install rules" ON)
-    foreach(name IN ITEMS BUILD_TESTS BUILD_APPS BUILD_MODULES INSTALL)
+    foreach(name IN ITEMS BUILD_TESTS BUILD_APPS INSTALL)
         string(TOLOWER "nom_${name}" variable)
         set(${variable} ${${prefix}_${name}} PARENT_SCOPE)
     endforeach()

@@ -44,6 +44,7 @@ code instead of renaming it:
 - deletes the example code (`core/example/`, `apps/hello/`, the example unit tests and the library usage
   test project, the nlohmann submodule), the lab (the sandbox experiments, `docs/lab/`) and the
   template-only files (`docker/`, the `ci-image` workflow, and itself);
+- retains the Metal v2.1.4 submodule and `nom_find_metal()` call as the shared dependency baseline;
 - deletes the lines and blocks the template marks as template-only;
 - sets the name and version `0.1.0` in `project()`; the options and the package name derive from it;
 - puts the name and a TODO description into `README.md` and `AGENTS.md`, and starts an empty
@@ -56,6 +57,8 @@ It checks everything first and stops without changing anything if the repo doesn
 fresh copy of the template. `./bootstrap.sh` validates the initialized repo locally; its regular
 `ci` workflow validates it on GitHub. The new repo starts without example tests; add your own
 code and tests with the recipes in [howto.md](howto.md), then run bootstrap again.
+Define new Nomisma library APIs in named modules and import them in apps and tests.
+Keep macro headers and third-party dependency headers where needed.
 
 ## Per-repo settings
 
@@ -91,3 +94,20 @@ git commit -m "Sync with cmake_template"
 The script diffs the template-owned paths between the template commit in `.template_ref` and the
 template's newest commit (or the given tag), applies the difference with `git apply --3way`, and
 updates `.template_ref`.
+
+The sync transfers shared build rules and guidance, not repository-owned code. A change to the
+composition policy therefore has two parts: sync the template-owned paths, then migrate the
+repo's `core/`, apps, tests and CMake target declarations to that policy. For the native module
+transition, move library declarations into interfaces or partitions, and make all consumers
+import the primary module. Keep macro and dependency
+headers where their boundary requires them, and validate source and installed-package usage.
+
+The script syncs committed template revisions, not uncommitted working-tree changes. While
+reviewing an unpublished template change, keep its shared files in the template checkout;
+assess the repo-specific migration separately and perform the recorded sync once the template
+revision is available.
+
+Dependency migrations also update repository-owned files: sync supplies `nom_find_metal()`,
+but existing repos add or retain the Metal submodule in `.gitmodules`, call the helper from their
+top-level `CMakeLists.txt`, and use `nom::metal` in place of local adapters. Public dependency
+declarations in installed packages use `nom_metal`.

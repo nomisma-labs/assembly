@@ -28,19 +28,25 @@ def main():
 project(relocation VERSION 1.0.0 LANGUAGES CXX)
 include("{kit}/nom_kit.cmake")
 nom_project_options()
-nom_lib(base SHARED SOURCES base.cpp)
-nom_lib(middle SHARED SOURCES middle.cpp PRIVATE_DEPS base)
+nom_lib(base SHARED SOURCES base.cpp MODULES base.cppm BASE_DIR ${{CMAKE_CURRENT_SOURCE_DIR}})
+nom_lib(middle SHARED SOURCES middle.cpp MODULES middle.cppm
+    BASE_DIR ${{CMAKE_CURRENT_SOURCE_DIR}} PRIVATE_DEPS base)
 nom_app(check SOURCES main.cpp DEPS middle)
 nom_install_package(TARGETS base middle)
 ''')
-        (source / "base.cpp").write_text("int base() { return 42; }\n")
-        (source / "middle.cpp").write_text("int base(); int middle() { return base(); }\n")
-        (source / "main.cpp").write_text("int middle(); int main() { return middle() == 42 ? 0 : 1; }\n")
+        (source / "base.cppm").write_text("export module relocation.base;\nexport int base_value();\n")
+        (source / "base.cpp").write_text("module relocation.base;\nint base_value() { return 42; }\n")
+        (source / "middle.cppm").write_text("export module relocation.middle;\nexport int middle_value();\n")
+        (source / "middle.cpp").write_text(
+            "module relocation.middle;\nimport relocation.base;\n"
+            "int middle_value() { return base_value(); }\n")
+        (source / "main.cpp").write_text(
+            "import relocation.middle;\nint main() { return middle_value() == 42 ? 0 : 1; }\n")
         build = root / "build"
         prefix = root / "prefix"
         run(args.cmake, "-S", str(source), "-B", str(build), "-G", args.generator,
             f"-DCMAKE_CXX_COMPILER={args.compiler}", "-DCMAKE_INSTALL_LIBDIR=lib/custom",
-            "-DRELOCATION_BUILD_TESTS=OFF", "-DRELOCATION_BUILD_MODULES=OFF")
+            "-DRELOCATION_BUILD_TESTS=OFF")
         run(args.cmake, "--build", str(build), "--parallel", "2")
         run(args.cmake, "--install", str(build), "--prefix", str(prefix))
         relocated = root / "relocated"

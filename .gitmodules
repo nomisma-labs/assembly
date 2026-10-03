@@ -1,0 +1,4 @@
+[submodule "external/metal"]
+	path = external/metal
+	url = https://github.com/brunocodutra/metal.git
+	shallow = true

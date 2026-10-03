@@ -9,66 +9,96 @@ example code (`core/example/`, `apps/hello/`, `tests/`) is the worked reference 
 ## A library
 
 The CMake project names the whole repo; library targets have their own names. A repo's main
-library normally uses the repo name: target `<repo>`, alias `nom::<repo>`, namespace `nom::<repo>`.
+library normally uses the repo name: target `<repo>`, alias `nom::<repo>`, module `nom.<repo>`.
+Module names and CMake aliases do not impose a C++ namespace hierarchy; exported names can
+live directly in `nom`.
 In `cmake_template`, the illustrative library is instead named `example`: the integration test
 uses `find_package(cmake_template)` and links `nom::example`.
 
-1. Put the code in `core/<repo>/`: `<file>.h` and `<file>.cpp`. Code includes the headers as
-   `<repo/file.h>`.
+1. Put the primary module interface in `core/<repo>/<repo>.cppm`. Define the public API there
+   or in interface partitions (`<part>.cppm`); put compiled definitions in implementation units
+   (`<file>.cpp`). The [module recipe](#a-module) shows the source layout.
 2. Add `core/<repo>/CMakeLists.txt`:
    ```cmake
    nom_lib(<repo>
-       SOURCES file.cpp          # without SOURCES the library is header-only
-       HEADERS file.h
-       PUBLIC_DEPS <targets>)    # what the headers need, if anything
+       MODULES <repo>.cppm thing.cppm
+       SOURCES thing.cpp
+       HEADERS macros.h         # only when the library needs public macros
+       PUBLIC_DEPS <targets>    # dependencies needed by the public interface, if any
+       PRIVATE_DEPS <targets>)  # dependencies used only by the implementation, if any
    if(nom_install)
        nom_install_package(TARGETS <repo> DEPENDENCIES <packages>)
    endif()
    ```
 
-   `DEPENDENCIES` lists the packages a consumer must find first, for example `nlohmann_json`.
+   `DEPENDENCIES` lists the packages needed by exported CMake targets, including private
+   dependencies that a static library carries into its link interface.
 3. Add `add_subdirectory(<repo>)` to `core/CMakeLists.txt`.
 4. Add its unit tests and library usage integration tests (below).
 
 Use `STATIC` or `SHARED` in `nom_lib` to select compiled-library linkage explicitly.
 They are mutually exclusive and require sources or modules. Omitting both preserves
-the `BUILD_SHARED_LIBS` default; headers-only targets remain interface libraries.
+the `BUILD_SHARED_LIBS` default. A template-only API still has module sources and is a compiled
+module target. An interface target without `SOURCES` or `MODULES` is for macro headers or
+third-party dependency adapters.
 
 A second library is named `<repo>_<name>`; list it in the same `nom_install_package()` call, which
 a repo makes once.
 
 ## A module
 
-The wrapper-module pattern: the headers stay the source and the module re-exports their API, so
-code can `#include` the headers or `import nom.<repo>;`.
+Nomisma libraries expose their APIs through native named modules. Their declarations follow the
+module declaration; apps and tests consume them with `import nom.<repo>;`.
 
 1. Add `core/<repo>/<repo>.cppm`:
    ```cpp
-   module;
-
-   #include <<repo>/file.h>
-
    export module nom.<repo>;
 
-   export namespace nom::<repo>
+   export import :thing;
+   ```
+2. Add the interface partition `core/<repo>/thing.cppm`:
+   ```cpp
+   export module nom.<repo>:thing;
+
+   export namespace nom
    {
-       using nom::<repo>::thing; // one line per exported name
-   } // namespace nom::<repo>
+       class thing
+       {
+       public:
+           int value() const;
+       };
+   } // namespace nom
    ```
-2. In `core/<repo>/CMakeLists.txt`, build it only when modules are on:
+   Template definitions belong in the interface or partition too, so importers can instantiate
+   them. A small library can define its API directly in the primary interface without partitions.
+3. Put compiled definitions in `core/<repo>/thing.cpp`:
+   ```cpp
+   module nom.<repo>;
+
+   namespace nom
+   {
+       int thing::value() const
+       {
+           return 42;
+       }
+   } // namespace nom
+   ```
+4. Register the interfaces and partitions unconditionally in `MODULES`, and implementation
+   units in `SOURCES`:
    ```cmake
-   set(module_files "")
-   if(nom_build_modules)
-       set(module_files <repo>.cppm)
-   endif()
-   nom_lib(<repo> … MODULES ${module_files})
+   nom_lib(<repo> MODULES <repo>.cppm thing.cppm SOURCES thing.cpp)
    ```
-3. Leave macros, and headers GCC can't take through a module (nlohmann's, for now), out of the
-   module; importers include them before their imports. More rules: [build.md](build.md#modules).
+5. For standard-library or third-party includes inside a module unit, start with a global module
+   fragment (`module;`, then the includes) before the named module declaration. Keep dependencies
+   private when the API does not need their types: `core/example/settings.cpp` includes nlohmann
+   privately and exports ordinary settings, parsing and serialization services through its
+   interface partition. Macros remain in headers; include those before imports in consumers.
+
+More rules and dependency boundaries: [build.md](build.md#modules).
 
 ## An app
 
-1. Put `main.cpp` in `apps/<app>/`.
+1. Put `main.cpp` in `apps/<app>/`; import the Nomisma libraries it uses.
 2. Add `apps/<app>/CMakeLists.txt`:
    ```cmake
    nom_app(<app> SOURCES main.cpp DEPS nom::<repo>)
@@ -92,13 +122,24 @@ code can `#include` the headers or `import nom.<repo>;`.
 
 1. Put Catch2 tests under `tests/unit/<suite>/` or inline beside the code in
    `<code dir>/tests/<suite>/`, as `<file>_test.cxx`. Test-only headers are `<name>_test.h`.
+   Include Catch2's macro header, then import the library under test:
+   ```cpp
+   #include <catch2/catch_test_macros.hpp>
+
+   import nom.<repo>;
+
+   TEST_CASE("a thing has a value")
+   {
+       REQUIRE(nom::thing{}.value() == 42);
+   }
+   ```
 2. Give the folder a `CMakeLists.txt` with one executable:
    ```cmake
    nom_c2test(tests SOURCES file_test.cxx DEPS nom::<repo>)
    set_tests_properties(${PROJECT_NAME}_tests PROPERTIES LABELS unit)
    ```
    `nom_c2test(<suite> …)` builds `<repo>_<suite>` and registers it with CTest; each folder needs
-   its own suite name (`tests`, `import_tests`, …).
+   its own suite name (`tests`, `relay_tests`, …).
 3. For a top-level suite, add `add_subdirectory(<suite>)` to `tests/unit/CMakeLists.txt`. For an
    inline suite, add this to the code directory's `CMakeLists.txt`, after defining the library:
    ```cmake
@@ -106,9 +147,8 @@ code can `#include` the headers or `import nom.<repo>;`.
        add_subdirectory(tests/<suite>)
    endif()
    ```
-   A suite using `import` also needs an `if(nom_build_modules)` guard. Use unique suite names
-   across both layouts. The root `CMakeLists.txt` enables testing and finds Catch2 before
-   processing code directories, so both layouts can call `nom_c2test()`.
+   Use unique suite names across both layouts. The root `CMakeLists.txt` enables testing and
+   finds Catch2 before processing code directories, so both layouts can call `nom_c2test()`.
 
 ## Library usage integration tests
 
@@ -139,13 +179,25 @@ that other repos rely on.
    target_link_libraries(use_library PRIVATE nom::<repo>)
    add_test(NAME use_library COMMAND use_library)
    ```
-2. Add `tests/integration/library_usage/use_library_test.cxx`: a `main()` that uses the library and returns 0 when it works.
+2. Add `tests/integration/library_usage/use_library_test.cxx`: a `main()` that imports the
+   library's primary module, uses its API and returns 0 when it works. Use that same source in
+   both consumption modes; package consumers rebuild module interfaces for their own compiler.
 3. Add `nom_library_usage_tests(library_usage)` to `tests/integration/CMakeLists.txt`. The
    helper labels its tests `integration`. Keep other integration checks here too, with the same
    label. Run either group with `ctest --preset dev -L unit` or `ctest --preset dev -L integration`.
 
 ## A dependency
 
+- **Metal:** already provided by the template's `nom_find_metal()` call. Use `nom::metal` in
+  `PUBLIC_DEPS` when module interfaces or headers depend on it, or `PRIVATE_DEPS` for an
+  implementation-only dependency. If exported targets reference Metal, list its installed package
+  as a dependency, including for private dependencies of static libraries:
+  ```cmake
+  nom_lib(<name> MODULES <name>.cppm PUBLIC_DEPS nom::metal)
+  if(nom_install)
+      nom_install_package(TARGETS <name> DEPENDENCIES nom_metal)
+  endif()
+  ```
 - **One of our repos:** a submodule with a relative URL, pinned to a release tag:
   ```bash
   git submodule add ../<dep>.git external/<dep>
@@ -158,7 +210,7 @@ that other repos rely on.
   FetchContent_Declare(<dep> SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/<dep>)
   FetchContent_MakeAvailable(<dep>)
   ```
-  Link `nom::<dep>`. If the repo's public headers use it, add `<dep>` to
+  Link `nom::<dep>` and import `nom.<dep>`. If exported CMake targets need it, add `<dep>` to
   `nom_install_package(DEPENDENCIES …)`.
 - **Third-party code:** a shallow submodule, pinned to a release tag:
   ```bash
@@ -169,8 +221,9 @@ that other repos rely on.
   git add .gitmodules external/<dep>
   ```
   Then decide case by case: the same three CMake lines when its CMake project works as a
-  subproject (nlohmann_json in cmake_template), or only its include directory when it doesn't
-  (metal).
+  subproject (nlohmann_json in cmake_template), or only its include directory when it doesn't.
+  Use a module wrapper when it gives a useful, supported API boundary; otherwise include
+  the dependency's headers where needed. Our library APIs belong in named modules.
 - **System libraries** (Boost, OpenSSL, …): `find_package(<Package> REQUIRED)`.
 
 ## An experiment

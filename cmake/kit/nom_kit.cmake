@@ -4,7 +4,7 @@
 # Nomisma CMake kit. Template-owned: change it in cmake_template, then pull the change into
 # derived repos with tools/sync_template.py. Reference: docs/build.md.
 
-set(_nom_kit_version 0.2.0)
+set(_nom_kit_version 0.3.0)
 
 # The same language flags everywhere: compiled module interfaces are flag-sensitive.
 if(NOT DEFINED CMAKE_CXX_STANDARD)

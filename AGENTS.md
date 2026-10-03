@@ -1,7 +1,11 @@
 # AGENTS.md
 
 <!-- repo-description:begin -->
-TODO: what `assembly` is and what it depends on.
+`assembly` provides static node/context composition, selective bidirectional event routing,
+and callable delegates under `nom`. The module is `nom.assembly` and the CMake target is
+`nom::assembly`. It uses the shared foundation's Metal v2.1.4 headers through `nom::metal`; Catch2 is
+used only for tests. Start with [docs/framework.md](docs/framework.md) and the executable
+learning path in [docs/tests.md](docs/tests.md).
 <!-- repo-description:end -->
 
 ## Build and test
@@ -19,7 +23,7 @@ TODO: what `assembly` is and what it depends on.
 
 ## Layout
 
-- `core/<repo>/`: the library. Headers are included as `<repo/file.h>`; the module is `nom.<repo>`.
+- `core/assembly/`: the `nom.assembly` module, with composition, relay and delegate interface partitions.
 - `apps/<app>/`: executables; optional `config/` is collected into `build/<preset>/config/<app>/` and installed with the app.
 - `apps/sandbox/`: experiments, normally `BUILD_FOR complete`; also buildable explicitly in other presets.
 - `tests/unit/<suite>/` or inline `<code dir>/tests/<suite>/`: Catch2 unit tests, labeled `unit`.
@@ -47,5 +51,10 @@ a dependency, an experiment.
   `tools/sync_template.py`. Don't edit them in a derived repo.
 - Modules: put `#include`s before `import`s, include the std headers you use yourself, and get
   macros from headers ([docs/build.md](docs/build.md#modules)).
+- The public C++ API uses namespace `nom`, overriding the generic repository namespace
+  convention. Keep module name `nom.assembly` and CMake target `nom::assembly`.
+- Unit suites and integration consumers import `nom.assembly`. Catch2 macros and standard-library
+  declarations come from headers; Metal stays in the module units' global fragments.
+  See [docs/tests.md](docs/tests.md) for the teaching suites.
 - The version lives only in `project()`; releases follow [docs/build.md](docs/build.md#versioning).
 - When you change behaviour that a doc describes, update the doc in the same change.

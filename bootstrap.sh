@@ -64,8 +64,8 @@ Each run clears the selected build/<preset> directories and previous bootstrap l
 initializes missing submodules, then configures/builds/tests from scratch.
 Other build directories are preserved.
 
-Python compatibility/imports, SPDX headers and formatting are checked on every run. Naming is checked when clang
-is selected; other single-preset runs report it as skipped.
+Python compatibility/imports, SPDX headers and formatting are checked on every run.
+Naming is included when clang is selected.
 Each step reports PASS, FAIL or SKIP; failures return exit code 1.
 Current logs are kept in build/bootstrap/.
 
@@ -293,12 +293,12 @@ if have_tools git "${CLANG_FORMAT:-clang-format-19}"; then
 else
     record SKIP 'Formatting' 'required tools failed'
 fi
-if [[ $clang_selected != true ]]; then
-    record SKIP 'Naming' 'clang was not selected; run ./bootstrap.sh clang to check naming'
-elif [[ $clang_ready == true ]] && have_tools clang-tidy-19 "${RUN_CLANG_TIDY:-run-clang-tidy-19}"; then
-    run_step 'Naming' bash tools/check_naming.sh
-else
-    record SKIP 'Naming' 'requires a successful Clang build and clang-tidy tools'
+if [[ $clang_selected == true ]]; then
+    if [[ $clang_ready == true ]] && have_tools clang-tidy-19 "${RUN_CLANG_TIDY:-run-clang-tidy-19}"; then
+        run_step 'Naming' bash tools/check_naming.sh
+    else
+        record SKIP 'Naming' 'requires a successful Clang build and clang-tidy tools'
+    fi
 fi
 
 printf '\nSummary\n'
