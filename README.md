@@ -1,8 +1,7 @@
-# cmake_template
+# assembly
 
 <!-- repo-description:begin -->
-The template every Nomisma C++ repo is created from, and the lab where build-system and C++
-features (modules first) are tried before real repos rely on them.
+TODO: what assembly is, in one paragraph.
 <!-- repo-description:end -->
 
 ## Bootstrap
@@ -59,28 +58,3 @@ app and experiment. Apps can limit their default build/install with `BUILD_FOR d
 
 Agents start at [AGENTS.md](AGENTS.md), people at [docs/](docs/README.md). Adding a library, an
 app, tests or a dependency: [docs/howto.md](docs/howto.md). Releases: [CHANGELOG.md](CHANGELOG.md).
-
-<!-- template-only:begin -->
-## A new repo from the template
-
-On GitHub, "Use this template" (or `gh repo create --template`), then
-`python3 tools/init_project.py <name>`, which removes the example code and the lab. See
-[docs/new_repo.md](docs/new_repo.md).
-
-## What's inside
-
-The CMake project and installed package are named `cmake_template`. The illustrative library
-is named `example` (`nom::example`); its code and tests exercise the build system.
-
-- **Example library `example`** (`core/example/`): a header-only template, a compiled class, a
-  config-like type with a public nlohmann dependency, a macro header, and the wrapper module
-  `nom.example`.
-- **Apps:** `hello` through headers and `hello_import` through `import nom.example;`
-  (`build/dev/bin/hello build/dev/config/hello/settings.json`), and lab experiments in `apps/sandbox/`.
-- **Tests:** `tests/unit/` holds Catch2 suites through headers and `import`; `tests/integration/`
-  checks library usage from a separate project and config installation. Use `ctest --preset dev -L unit` or `ctest --preset dev -L integration` to select a group.
-- **Build system:** presets, the CMake kit (`cmake/kit/`), dependencies as submodules in `external/`.
-- **Checks and CI:** SPDX headers, formatting, naming and the release-tag check, on a shared CI
-  image. Validate a newly initialized repo locally with `./bootstrap.sh`.
-- **Lab:** [docs/lab/](docs/lab/README.md).
-<!-- template-only:end -->

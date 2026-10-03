@@ -1,10 +1,7 @@
 # AGENTS.md
 
 <!-- repo-description:begin -->
-This is **cmake_template**: the template every Nomisma C++ repo is created from, and the lab
-where build-system and C++ features (modules first) are tried before real repos rely on them.
-Its example code (library `example`, app `hello`, their tests and the library usage test project) shows
-every mechanism working; `tools/init_project.py` removes it from new repos.
+TODO: what `assembly` is and what it depends on.
 <!-- repo-description:end -->
 
 ## Build and test
@@ -52,5 +49,3 @@ a dependency, an experiment.
   macros from headers ([docs/build.md](docs/build.md#modules)).
 - The version lives only in `project()`; releases follow [docs/build.md](docs/build.md#versioning).
 - When you change behaviour that a doc describes, update the doc in the same change.
-- Lab work (template only): experiments go in `apps/sandbox/`, findings in `docs/lab/`. <!-- template-only -->
-- Template only: end a line that new repos must not get with a `template-only` comment, or wrap a block in `template-only:begin`/`template-only:end` comments; `tools/init_project.py` removes them. Template-owned files carry none. <!-- template-only -->
