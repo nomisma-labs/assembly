@@ -41,10 +41,13 @@ git push
 `tools/init_project.py <name>` turns the copy into an empty repo. It removes the template's example
 code instead of renaming it:
 
-- deletes the example code (`core/example/`, `apps/hello/`, the example unit tests and the library usage
-  test project, the nlohmann submodule), the lab (the sandbox experiments, `docs/lab/`) and the
+- deletes the example code (`core/example/`, `apps/hello/`, the example unit tests, library usage
+  and Python package test projects, root `pyproject.toml`, `python/`, the nlohmann submodule),
+  the lab (the sandbox experiments, `docs/lab/`) and the
   template-only files (`docker/`, the `ci-image` workflow, and itself);
 - retains the Metal v2.1.4 submodule and `nom_find_metal()` call as the shared dependency baseline;
+- retains optional Python packaging helpers and pinned build-tool requirements; generated repos
+  start without a Python package and add one using [howto.md](howto.md#a-python-package);
 - deletes the lines and blocks the template marks as template-only;
 - sets the name and version `0.1.0` in `project()`; the options and the package name derive from it;
 - puts the name and a TODO description into `README.md` and `AGENTS.md`, and starts an empty
@@ -111,3 +114,8 @@ Dependency migrations also update repository-owned files: sync supplies `nom_fin
 but existing repos add or retain the Metal submodule in `.gitmodules`, call the helper from their
 top-level `CMakeLists.txt`, and use `nom::metal` in place of local adapters. Public dependency
 declarations in installed packages use `nom_metal`.
+
+Python packaging follows the same boundary: synchronize the kit, tools and shared guidance,
+then add repository-owned `pyproject.toml`, binding sources and target declarations. Keep the
+backend, environment and runtime-library installation mechanisms in the template; repositories
+declare their package names, dependencies and contents through those facilities.
