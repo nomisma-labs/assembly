@@ -71,9 +71,9 @@ needed by our current naming check.
 | `asan` | Clang 19, Debug, AddressSanitizer + UBSan | memory and undefined-behaviour checks |
 | `ci` | GCC 16, RelWithDebInfo, warnings as errors | CI |
 
-Executable names and package versions are recorded in [Toolchain](#toolchain). Historical
-compiler compatibility findings are recorded in `cmake_template/docs/lab/toolchain.md`;
-retest them when changing compiler versions.
+Executable names and package versions are recorded in [Toolchain](#toolchain). Current module
+and sanitizer validation is recorded in `cmake_template/docs/lab/toolchain.md`;
+validate the supported presets when changing compiler versions.
 
 Personal presets go in `CMakeUserPresets.json`, which is git-ignored. For example, to build
 against a local checkout of the config repo (see Dependencies):
@@ -231,8 +231,8 @@ Headers still have specific roles at the boundaries:
   public declarations in named modules.
 - Prefer keeping a dependency private when its types are not part of the API. The example's
   settings implementation uses nlohmann headers privately, while the module exports settings
-  values and parsing/serialization functions. Recorded third-party limitations and historical
-  probes are in `cmake_template/docs/lab/third_party_in_modules.md`.
+  values and parsing/serialization functions. Current third-party integration findings are in
+  `cmake_template/docs/lab/third_party_in_modules.md`.
 
 In module units, put includes in the global module fragment (`module;` followed by the includes),
 before the named module declaration. In ordinary sources, put includes before imports.
