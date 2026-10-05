@@ -51,7 +51,7 @@ Ordinary C++ builds and repository scripts need no third-party Python packages o
 Python 3.10 is the minimum because the scripts use annotations such as `str | None`;
 the current local version is recorded in [Toolchain](#toolchain).
 
-`python3 tools/check_python.py` checks the interpreter version, compiles repository Python
+`python3 tools/kit/checks/python.py` checks the interpreter version, compiles repository Python
 scripts in memory, and checks their imported modules. It discovers tracked and unignored new
 scripts through Git; local helpers are syntax-checked without executing them. Bootstrap runs
 this check before builds and skips Python-dependent steps if it fails. When `clang` is selected,
@@ -65,7 +65,7 @@ Python packaging is optional and uses a dedicated environment. On Ubuntu, instal
 
 ```bash
 python3 -m venv build/python-env
-build/python-env/bin/python -m pip install -r tools/python_package_requirements.txt
+build/python-env/bin/python -m pip install -r tools/kit/python_package_requirements.txt
 CXX=g++-16 build/python-env/bin/python -m build --wheel --no-isolation --outdir build/wheels .
 ```
 
@@ -152,7 +152,7 @@ once. In VS Code, use the clangd extension with `"clangd.path": "/usr/bin/clangd
 ## The CMake kit
 
 `cmake/kit/` is shared by every repo and owned by the template (change it in `cmake_template`, then
-run `tools/sync_template.py` in the other repos). The top-level `CMakeLists.txt` includes
+run `tools/kit/sync_template.py` in the other repos). The top-level `CMakeLists.txt` includes
 `cmake/kit/nom_kit.cmake`, which sets C++23 without compiler extensions. This remains the single
 entry point: `api/` contains the helpers used by repositories, `deps/` contains dependency
 services, `internal/` contains implementation helpers, and `templates/` contains generic package
@@ -323,7 +323,7 @@ To release `x.y.z`:
 4. Tag that commit on `master` and push the tag:
    ```bash
    git switch master && git pull
-   python3 tools/check_version.py vx.y.z     # the check CI runs on the tag
+   python3 tools/kit/checks/version.py vx.y.z     # the check CI runs on the tag
    git tag -a vx.y.z -m "Release x.y.z"
    git push origin vx.y.z
    ```
@@ -332,11 +332,11 @@ To release `x.y.z`:
 
 | Check | Command |
 |---|---|
-| Python environment | `python3 tools/check_python.py` |
-| SPDX headers | `python3 tools/check_headers.py` |
-| Formatting | `tools/check_format.sh` (`--fix` to reformat) |
-| Naming | `tools/check_naming.sh` (builds `clang` with `NOM_BUILD_PRESET=complete` to cover every app) |
-| Release tag | `python3 tools/check_version.py <tag>` |
+| Python environment | `python3 tools/kit/checks/python.py` |
+| SPDX headers | `python3 tools/kit/checks/headers.py` |
+| Formatting | `tools/kit/checks/format.sh` (`--fix` to reformat) |
+| Naming | `tools/kit/checks/naming.sh` (builds `clang` with `NOM_BUILD_PRESET=complete` to cover every app) |
+| Release tag | `python3 tools/kit/checks/version.py <tag>` |
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the `ci` workflow preset and the first four
 checks on pushes to `master`, pull requests, manual runs, and `v*` tags. The version check runs

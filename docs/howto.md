@@ -222,7 +222,7 @@ and packaging tools. Packaging does not choose or generate the Python API.
    link expressions other than the supported `LINK_ONLY`/`BUILD_INTERFACE` wrappers are rejected.
    System-library and portable-wheel repair policies are outside this initial helper.
 4. Add `pyproject.toml`. Replace `<repo>`, its upper-case `<PROJECT>`, `<distribution>` and
-   `<package>`; keep the backend pin aligned with `tools/python_package_requirements.txt`:
+   `<package>`; keep the backend pin aligned with `tools/kit/python_package_requirements.txt`:
    ```toml
    [build-system]
    requires = ["scikit-build-core==0.11.6"]
@@ -308,7 +308,7 @@ environment. Change shared mechanisms in the template, then synchronize them int
 
 ## An experiment
 
-`python3 tools/add_sandbox_app.py <name>` creates `apps/sandbox/<name>/`, built as
+`python3 tools/kit/add_sandbox_app.py <name>` creates `apps/sandbox/<name>/`, built as
 `bin/sandbox_<name>` and linked to the main library if the repo has one. It uses `BUILD_FOR complete`:
 run `cmake --workflow --preset complete`, or build its target explicitly in another preset. If an
 experiment has its own support libraries, mark them `EXCLUDE_FROM_ALL TRUE` so they build only

@@ -170,7 +170,7 @@ have_tools() {
 
 check_python_environment() {
     local preset
-    python3 tools/check_python.py || return
+    python3 tools/kit/checks/python.py || return
     for preset in "${presets[@]}"; do
         if [[ $preset == clang ]]; then
             # This runner may use a different interpreter through its shebang.
@@ -284,18 +284,18 @@ for preset in "${presets[@]}"; do
 done
 
 if [[ $python_ready == true ]]; then
-    run_step 'SPDX headers' python3 tools/check_headers.py
+    run_step 'SPDX headers' python3 tools/kit/checks/headers.py
 else
     record SKIP 'SPDX headers' 'Python environment check did not pass'
 fi
 if have_tools git "${CLANG_FORMAT:-clang-format-19}"; then
-    run_step 'Formatting' bash tools/check_format.sh
+    run_step 'Formatting' bash tools/kit/checks/format.sh
 else
     record SKIP 'Formatting' 'required tools failed'
 fi
 if [[ $clang_selected == true ]]; then
     if [[ $clang_ready == true ]] && have_tools clang-tidy-19 "${RUN_CLANG_TIDY:-run-clang-tidy-19}"; then
-        run_step 'Naming' bash tools/check_naming.sh
+        run_step 'Naming' bash tools/kit/checks/naming.sh
     else
         record SKIP 'Naming' 'requires a successful Clang build and clang-tidy tools'
     fi
@@ -307,7 +307,7 @@ printf '\n%s passed, %s failed, %s skipped.\nLogs: %s\n' "$passed" "$failed" "$s
 if (( failed > 0 )); then
     printf '\nValidation failed. Fix the failures above, then rerun ./bootstrap.sh%s.\n' "${1:+ $1}"
     printf 'Toolchain and build instructions: docs/build.md\n'
-    printf 'Formatting fixes: tools/check_format.sh --fix\n'
+    printf 'Formatting fixes: tools/kit/checks/format.sh --fix\n'
     exit 1
 fi
 
