@@ -141,7 +141,7 @@ and storage mechanics.
 The suites keep framework behavior separate from infrastructure: there are no network calls,
 wall-clock dependencies or filesystem fixtures in the teaching scenarios. Their traces and
 state assertions describe the contract at the call boundary. Build and package integration
-checks are described separately in [build.md](build.md). Both source and installed-package
+checks are described separately in [build.md](kit/build.md). Both source and installed-package
 consumers import the same public module.
 
 See [framework.md](framework.md) for API contracts, ownership rules and the migration table.

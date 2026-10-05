@@ -12,7 +12,17 @@ and generator from the preset rather than bootstrap guessing them from its name.
 Each run deletes only the selected build directories and previous `build/bootstrap/` logs.
 Python compatibility/imports, headers and formatting are always checked; naming is included when
 `clang` is selected. A failed check returns a nonzero exit code. Invalid arguments
-are rejected before cleanup. For everyday incremental work, use the commands below.
+are rejected before cleanup.
+
+Each step reports `PASS`, `FAIL` or `SKIP`, then a summary and next steps; independent checks
+continue after a failure, and only the current run's logs are kept under `build/bootstrap/`. A
+new repo reports its tests as skipped until it has some. Submodules at unexpected commits are
+reported, not reset. Initializing dependencies, or CMake's fallback download, may need network
+access. Builds use one job fewer than the CPU cores, at least one;
+`CMAKE_BUILD_PARALLEL_LEVEL=4 ./bootstrap.sh` overrides that. Bootstrap also works when started
+from another directory.
+
+For everyday incremental work, use the commands below.
 
 ```bash
 git submodule update --init --recursive   # once, after cloning
@@ -83,7 +93,9 @@ the [Python package recipe](howto.md#a-python-package).
 
 ## Presets
 
-`CMakePresets.json` holds the build settings that developers, CI, IDEs and agents share.
+The presets hold the build settings that developers, CI, IDEs and agents share. The shared ones
+are in `cmake/kit/presets.json`; a repo's `CMakePresets.json` includes that file and can add
+presets of its own under other names.
 
 | Preset | Compiler and build type | Purpose |
 |---|---|---|
@@ -156,7 +168,7 @@ run `tools/kit/sync_template.py` in the other repos). The top-level `CMakeLists.
 `cmake/kit/nom_kit.cmake`, which sets C++23 without compiler extensions. This remains the single
 entry point: `api/` contains the helpers used by repositories, `deps/` contains dependency
 services, `internal/` contains implementation helpers, and `templates/` contains generic package
-metadata templates. See the [kit overview](../cmake/README.md) for short examples.
+metadata templates. See the [kit overview](../../cmake/kit/README.md) for short examples.
 
 The entry point provides:
 

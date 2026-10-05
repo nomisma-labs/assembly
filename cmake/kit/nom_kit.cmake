@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 #
 # Nomisma CMake kit. Template-owned: change it in cmake_template, then pull the change into
-# derived repos with tools/kit/sync_template.py. Reference: docs/build.md.
+# derived repos with tools/kit/sync_template.py. Reference: docs/kit/build.md.
 
 set(_nom_kit_version 0.4.0)
 

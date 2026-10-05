@@ -82,11 +82,10 @@ Keep macro headers and third-party dependency headers where needed.
 
 ## Keeping repos in sync
 
-Template-owned paths are `bootstrap.sh`, `cmake/kit/`, `tools/kit/`, the shared docs
-(`docs/build.md`, `docs/conventions.md`, `docs/howto.md`, this file), `.clang-format`,
-`.clang-tidy`, `.clangd`, `.editorconfig` and `.github/workflows/ci.yml`. Change them only in
-`cmake_template`; a repo keeps its own tools in `tools/`, outside the kit. To bring a repo up to
-date:
+Template-owned paths are the kits (`cmake/kit/`, `tools/kit/`, `docs/kit/`), `bootstrap.sh`,
+`.clang-format`, `.clang-tidy`, `.clangd`, `.editorconfig` and `.github/workflows/ci.yml`.
+Change them only in `cmake_template`; a repo keeps its own CMake files, tools and docs in
+`cmake/`, `tools/` and `docs/`, outside the kits. To bring a repo up to date:
 
 ```bash
 python3 tools/kit/sync_template.py      # to the newest release, or --to <release tag>

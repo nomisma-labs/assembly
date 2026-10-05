@@ -7,7 +7,7 @@
     python3 tools/kit/checks/version.py v1.2.0     # fails unless the tag is v<version>
 
 The version lives only in the project() call of the top-level CMakeLists.txt, and releases are
-tagged v<version> (docs/build.md#versioning). CI runs the check on every tag push.
+tagged v<version> (docs/kit/build.md#versioning). CI runs the check on every tag push.
 """
 
 import re

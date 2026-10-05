@@ -69,7 +69,7 @@ Naming is included when clang is selected.
 Each step reports PASS, FAIL or SKIP; failures return exit code 1.
 Current logs are kept in build/bootstrap/.
 
-Install the tools listed in docs/build.md first. No packages are installed.
+Install the tools listed in docs/kit/build.md first. No packages are installed.
 Build concurrency defaults to available CPU cores minus one, with a minimum of one.
 Set CMAKE_BUILD_PARALLEL_LEVEL to override it.
 CLANG_FORMAT and RUN_CLANG_TIDY overrides are respected by the existing checks.
@@ -204,7 +204,7 @@ run_tests() {
         return
     fi
     if [[ $count == 0 ]]; then
-        record SKIP "$preset: tests" 'no tests registered; add tests using docs/howto.md'
+        record SKIP "$preset: tests" 'no tests registered; add tests using docs/kit/howto.md'
     else
         run_step "$preset: tests ($count registered, unit and integration tests where present)" \
             ctest --preset "$preset" --output-on-failure --no-tests=error
@@ -306,7 +306,7 @@ printf '%s\n' "${results[@]}"
 printf '\n%s passed, %s failed, %s skipped.\nLogs: %s\n' "$passed" "$failed" "$skipped" "$log_dir"
 if (( failed > 0 )); then
     printf '\nValidation failed. Fix the failures above, then rerun ./bootstrap.sh%s.\n' "${1:+ $1}"
-    printf 'Toolchain and build instructions: docs/build.md\n'
+    printf 'Toolchain and build instructions: docs/kit/build.md\n'
     printf 'Formatting fixes: tools/kit/checks/format.sh --fix\n'
     exit 1
 fi
@@ -316,6 +316,6 @@ if (( skipped > 0 )); then
     printf 'Review the skipped checks above.\n'
 fi
 printf '\nNext steps:\n'
-printf '  Add a library, app or tests: docs/howto.md\n'
+printf '  Add a library, app or tests: docs/kit/howto.md\n'
 printf '  Build and tests: cmake --workflow --preset %s\n' "$next_preset"
 printf '  Executables: build/%s/bin/\n' "$next_preset"

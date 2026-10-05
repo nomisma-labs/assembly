@@ -1,7 +1,7 @@
 # Conventions
 
 These conventions apply to every Nomisma repo from its first commit. This file is the canonical
-text; every repo's `AGENTS.md` links here.
+text; every repo's agent rules ([agents.md](agents.md)) link here.
 
 ## C++ identifiers
 

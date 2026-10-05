@@ -40,7 +40,7 @@ def main() -> int:
         print(f"error: {experiment.relative_to(ROOT)} already exists", file=sys.stderr)
         return 1
     project = re.search(r"^project\(\s*(\w+)", (ROOT / "CMakeLists.txt").read_text(), re.MULTILINE).group(1)
-    # The main library, when the repo has one, is core/<project> (docs/howto.md#a-library).
+    # The main library, when the repo has one, is core/<project> (docs/kit/howto.md#a-library).
     deps = f" DEPS nom::{project}" if (ROOT / "core" / project).is_dir() else ""
 
     experiment.mkdir()

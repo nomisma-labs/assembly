@@ -14,7 +14,7 @@ this repo that still mention moved or removed template paths, and prints the tem
 steps for the releases in between. Review with `git diff --cached`, run ./bootstrap.sh, commit.
 
 The target release's copy of this script does the work, so the file list and the rules always
-come from the release being synced to (docs/new_repo.md#keeping-repos-in-sync).
+come from the release being synced to (docs/kit/new_repo.md#keeping-repos-in-sync).
 """
 
 import argparse
@@ -33,10 +33,7 @@ TEMPLATE_OWNED = [
     "bootstrap.sh",
     "cmake/kit",
     "tools/kit",
-    "docs/build.md",
-    "docs/conventions.md",
-    "docs/howto.md",
-    "docs/new_repo.md",
+    "docs/kit",
     ".clang-format",
     ".clang-tidy",
     ".clangd",

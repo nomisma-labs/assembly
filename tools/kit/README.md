@@ -15,5 +15,5 @@ tools go in `tools/`, outside the kit.
 | `add_sandbox_app.py` | adds an experiment in `apps/sandbox/` |
 | `python_package_requirements.txt` | pinned tools for optional Python wheel builds |
 
-`./bootstrap.sh` and CI run the checks ([docs/build.md](../../docs/build.md#checks-and-ci)).
-[docs/new_repo.md](../../docs/new_repo.md#keeping-repos-in-sync) describes the sync.
+`./bootstrap.sh` and CI run the checks ([docs/kit/build.md](../../docs/kit/build.md#checks-and-ci)).
+[docs/kit/new_repo.md](../../docs/kit/new_repo.md#keeping-repos-in-sync) describes the sync.
