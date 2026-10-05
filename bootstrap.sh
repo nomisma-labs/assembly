@@ -316,9 +316,6 @@ if (( skipped > 0 )); then
     printf 'Review the skipped checks above.\n'
 fi
 printf '\nNext steps:\n'
-if [[ -f tools/init_project.py ]]; then
-    printf '  Create a repository from this template: docs/new_repo.md\n'
-fi
 printf '  Add a library, app or tests: docs/howto.md\n'
 printf '  Build and tests: cmake --workflow --preset %s\n' "$next_preset"
 printf '  Executables: build/%s/bin/\n' "$next_preset"

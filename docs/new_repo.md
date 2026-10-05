@@ -44,7 +44,7 @@ code instead of renaming it:
 - deletes the example code (`core/example/`, `apps/hello/`, the example unit tests, library usage
   and Python package test projects, root `pyproject.toml`, `python/`, the nlohmann submodule),
   the lab (the sandbox experiments, `docs/lab/`) and the
-  template-only files (`docker/`, the `ci-image` workflow, and itself);
+  template-only files (`docker/`, the `ci-image` and `ci-template` workflows, and itself);
 - retains the Metal v2.1.4 submodule and `nom_find_metal()` call as the shared dependency baseline;
 - retains optional Python packaging helpers and pinned build-tool requirements; generated repos
   start without a Python package and add one using [howto.md](howto.md#a-python-package);

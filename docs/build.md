@@ -75,26 +75,11 @@ The repository's `pyproject.toml` selects the backend, derives the package versi
 `project()` and enables `<PROJECT>_BUILD_PYTHON`. CMake's `nom_python` install component supplies
 the native package files. Python runtime dependencies remain separate package metadata.
 
-The template example packages `nomisma_example._native` and its shared `example` library;
-`nomisma_example.counter_value(count)` calls the C++ module API. The initial fixture targets
-Ubuntu 26.04 with GCC 16 and CPython 3.14.4. It produces a wheel for that environment, with no
-claim of compatibility across Linux distributions or Python versions. Source and imported
-C++ module libraries must use the same tested compiler and compatible runtime.
-
-To run the template's source and installed-library wheel checks:
-
-```bash
-cmake --preset ci -DCMAKE_TEMPLATE_TEST_PYTHON_PACKAGE=ON \
-  -DNOM_PYTHON_EXECUTABLE="$PWD/build/python-env/bin/python"
-ctest --preset ci -R python_package --output-on-failure
-```
-
-The test runner builds the wheels, installs them in fresh virtual environments and calls the
-native API outside the source/build trees, with original native artifacts unavailable. It also
-checks metadata and bundled runtime libraries. This test is opt-in; ordinary bootstrap builds
-do not install packaging dependencies. Repository initialization removes the example package
-but retains the shared helper and packaging tools. Add a package using the
-[Python package recipe](howto.md#a-python-package).
+Packaging is tested on Ubuntu 26.04 with GCC 16 and CPython 3.14.4. A wheel is built for that
+environment, with no claim of compatibility across Linux distributions or Python versions.
+Source and imported C++ module libraries must use the same tested compiler and compatible
+runtime. Ordinary bootstrap builds do not install packaging dependencies. Add a package using
+the [Python package recipe](howto.md#a-python-package).
 
 ## Presets
 
@@ -353,10 +338,7 @@ To release `x.y.z`:
 | Naming | `tools/check_naming.sh` (builds `clang` with `NOM_BUILD_PRESET=complete` to cover every app) |
 | Release tag | `python3 tools/check_version.py <tag>` |
 
-GitHub Actions (`.github/workflows/ci.yml`) runs the `ci` and `clang` workflows and the first three
+GitHub Actions (`.github/workflows/ci.yml`) runs the `ci` workflow preset and the first four
 checks on pushes to `master`, pull requests, manual runs, and `v*` tags. The version check runs
-only on `v*` tags. Build and quality checks run in the CI
-image `ghcr.io/<owner>/ci`, which cmake_template builds from `docker/ci/Dockerfile`.
-The separate Python package job prepares the optional environment and runs the wheel fixture
-when its test project is present. Initialized repositories skip that example and add tests for
-their own packages.
+only on `v*` tags. Build and quality checks run in the CI image `ghcr.io/<owner>/ci`, which
+cmake_template builds from `docker/ci/Dockerfile`.

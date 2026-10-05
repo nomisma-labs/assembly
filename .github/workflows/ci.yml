@@ -31,29 +31,6 @@ jobs:
       - name: Configure, build, test
         run: cmake --workflow --preset ${{ matrix.preset }}
 
-  python_package:
-    name: native Python wheel example
-    runs-on: ubuntu-26.04
-    container: ghcr.io/${{ github.repository_owner }}/ci:latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      # Initialization removes the example. Derived repos add their own wheel tests.
-      - name: Prepare optional Python packaging environment
-        if: hashFiles('tests/integration/python_package/check.py') != ''
-        run: |
-          python3 -m venv build/python-env
-          build/python-env/bin/python -m pip install -r tools/python_package_requirements.txt
-      - name: Configure wheel integration test
-        if: hashFiles('tests/integration/python_package/check.py') != ''
-        run: >-
-          cmake --preset ci -DCMAKE_TEMPLATE_TEST_PYTHON_PACKAGE=ON
-          -DNOM_PYTHON_EXECUTABLE="$PWD/build/python-env/bin/python"
-      - name: Build, install and import wheels
-        if: hashFiles('tests/integration/python_package/check.py') != ''
-        run: ctest --preset ci -R python_package --no-tests=error
-
   checks:
     name: headers, format, naming
     runs-on: ubuntu-26.04
