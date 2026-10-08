@@ -183,7 +183,6 @@ The entry point provides:
 | `nom_install_package(TARGETS … [DEPENDENCIES …])` | Install rules and `<project>-config.cmake`, so consumers can `find_package(<project>)` and link `nom::<target>`. |
 | `nom_require_submodule(<path>)` | Fails early, with the fix, when a submodule wasn't checked out. |
 | `nom_find_catch2()` | The system Catch2 3, otherwise a pinned download; called at the project root when tests are enabled, before code directories. |
-| `nom_find_metal()` | The retained Metal submodule as `nom::metal`, plus its separate `nom_metal` installed package. |
 
 `nom_c2test` is specific to Catch2. Future test frameworks can have their own helpers
 without changing `nom_lib` or `nom_app`.
@@ -205,12 +204,6 @@ Named modules are part of every Nomisma library build.
 
 ## Dependencies
 
-- **Metal:** the shared foundation includes a submodule pinned to v2.1.4. Call
-  `nom_find_metal()` before adding code directories and link `nom::metal` where its headers are
-  needed. The helper uses only Metal's include directory, leaving its upstream CMake project
-  unconfigured. With installation enabled, it installs a separate `nom_metal` package containing
-  the headers and license. Libraries whose exported targets reference Metal list `nom_metal` in
-  `nom_install_package(DEPENDENCIES …)`, including private dependencies of static libraries.
 - **Our repos:** a git submodule in `external/<name>`, wired with
   `FetchContent_Declare(<name> SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/<name>)` and
   `FetchContent_MakeAvailable(<name>)`. FetchContent keeps the first declaration of a name, so in a

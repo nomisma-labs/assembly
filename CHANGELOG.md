@@ -6,6 +6,12 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+### Changed
+
+- Synchronized the shared CMake foundation with cmake_template v0.7.0, which drops Metal from the
+  kit: `cmake/assembly/metal.cmake` now provides `nom_find_metal()`. The `nom::metal` target and
+  the installed `nom_metal` package are unchanged.
+
 ## [0.1.0] - 2026-10-03
 
 ### Added

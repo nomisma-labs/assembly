@@ -4,7 +4,7 @@
 # Nomisma CMake kit. Template-owned: change it in cmake_template, then pull the change into
 # derived repos with tools/kit/sync_template.py. Reference: docs/kit/build.md.
 
-set(_nom_kit_version 0.4.0)
+set(_nom_kit_version 0.7.0)
 
 # The same language flags everywhere: compiled module interfaces are flag-sensitive.
 if(NOT DEFINED CMAKE_CXX_STANDARD)
@@ -36,7 +36,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/api/python.cmake)
 
 # Dependency acquisition and adapters.
 include(${CMAKE_CURRENT_LIST_DIR}/deps/submodules.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/deps/metal.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/deps/catch2.cmake)
 
 # Implementation utilities shared by the public helpers.

@@ -5,8 +5,8 @@ Assembly composes an application from an ordered list of C++ nodes. Nodes exchan
 events through a bidirectional relay and contribute shared services through context mixins.
 The same library provides `delegate` callback interfaces for connecting runtime event sources
 to those nodes. Assembly is a module-first C++23 library: its API lives in `nom` and is exported
-by `nom.assembly`. Its only library dependency is Metal v2.1.4, provided by the shared
-CMake foundation as `nom::metal`.
+by `nom.assembly`. Its only library dependency is Metal v2.1.4, pinned in `external/metal` and
+provided as `nom::metal` by [cmake/assembly/metal.cmake](cmake/assembly/metal.cmake).
 <!-- repo-description:end -->
 
 Read [the framework guide](docs/framework.md) for the pattern and API, then follow

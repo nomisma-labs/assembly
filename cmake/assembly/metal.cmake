@@ -3,9 +3,9 @@
 
 # nom_find_metal()
 #
-# Provides nom::metal from the foundational submodule. The first declaration and target
+# Provides nom::metal from the external/metal submodule. The first declaration and target
 # win in a superbuild. Metal's own project builds tools and tests, so only its headers
-# are populated; their separate package is shared by every installed Nomisma library.
+# are populated; they install as the separate nom_metal package that the assembly package finds.
 function(nom_find_metal)
     if(TARGET nom::metal)
         return()

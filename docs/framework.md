@@ -20,7 +20,7 @@ The library separates three jobs:
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
 `nom::relay<Recipe>`. Import `nom.assembly`; its
 [primary interface](../core/assembly/assembly.cppm) re-exports the three partitions above.
-The implementation uses the shared foundation's Metal **v2.1.4** headers for
+The implementation uses Metal **v2.1.4** headers, pinned in `external/metal`, for
 compile-time type lists. It has no dependency on configuration, logging, networking
 or trading libraries. `complex_relay` is a teaching scenario built with these facilities.
 
