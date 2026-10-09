@@ -58,10 +58,11 @@ intentionally fails until the handler node is restored.
 
 ## Read an application through five inventories
 
-Start with the recipe, then connect its public services, event handlers, policies, configuration
-reads and event origins. This gives a checkable account of what each node contributes. The
-`complex_relay` suite provides a worked example: a small paper-order workflow, with no external
-services required.
+Apply the five questions from
+[How to understand Assembly/Relay applications](understanding_applications.md): connect the
+node list to its public services, event handlers, traits, configuration reads, and event origins.
+The `complex_relay` suite provides a worked example: a small paper-order workflow, with no
+external services required.
 
 Its node order is:
 

@@ -4,6 +4,9 @@ An assembly describes an application as an ordered collection of nodes. Each nod
 responsibility: validate a command, adapt a transport, maintain shared state, or consume a result.
 The recipe makes those responsibilities and their communication order visible in one place.
 
+Start with [How to understand Assembly/Relay applications](understanding_applications.md) when
+reading an application. This guide explains the framework contracts behind that reading method.
+
 Nodes collaborate through events and a shared context. Prefer events when they express the
 interaction: the event signature and the node's position limit who can participate. Context is
 useful for services and state with application-wide scope, such as a clock, connection state or
