@@ -95,6 +95,34 @@ namespace nom
                 return static_cast<const node&>(*this);
             }
         };
+
+        template <typename Assembly, typename Part>
+        concept context_mixin =
+            std::is_class_v<Part> && requires(Part* part) { static_cast<typename Assembly::body::context*>(part); };
+
+        template <typename Assembly, typename Part>
+        concept context_part =
+            context_mixin<Assembly, Part> || (std::is_class_v<Part> && requires(Part* part) {
+                static_cast<typename Assembly::body::context*>(static_cast<typename Assembly::body*>(part));
+            });
+
+        template <typename From, typename To>
+        using copy_const = std::conditional_t<std::is_const_v<From>, const To, To>;
+
+        // Part carries the source's constness through either cast path.
+        template <typename Assembly, typename Part>
+            requires context_part<Assembly, std::remove_const_t<Part>>
+        inline auto& ctx(Part* part) noexcept
+        {
+            using context = copy_const<Part, typename Assembly::body::context>;
+            if constexpr (context_mixin<Assembly, std::remove_const_t<Part>>)
+                return *static_cast<context*>(part);
+            else
+            {
+                using body = copy_const<Part, typename Assembly::body>;
+                return *static_cast<context*>(static_cast<body*>(part));
+            }
+        }
     } // namespace detail
 } // namespace nom
 
@@ -109,18 +137,33 @@ export namespace nom
         using body = detail::assembly_body<nodes>;
     };
 
-    // NodeOrMixin must be a Node<Traits> or Mixin<Traits> base of Traits::body.
+    // An explicit Assembly also supports nested mixins, whose enclosing Traits cannot be deduced.
+    template <typename Assembly, typename Part>
+        requires detail::context_part<Assembly, Part>
+    inline auto& ctx(Part* part) noexcept
+    {
+        return detail::ctx<Assembly, Part>(part);
+    }
+
+    template <typename Assembly, typename Part>
+        requires detail::context_part<Assembly, Part>
+    inline const auto& ctx(const Part* part) noexcept
+    {
+        return detail::ctx<Assembly, const Part>(part);
+    }
+
+    // Deduce Traits from Node<Traits> or Mixin<Traits>.
     template <template <typename> class NodeOrMixin, typename Traits>
+        requires detail::context_part<Traits, NodeOrMixin<Traits>>
     inline auto& ctx(NodeOrMixin<Traits>* part) noexcept
     {
-        // A node constructor can run before all body bases are initialized. Access the already
-        // constructed context directly, without calling a member on the unfinished body.
-        return static_cast<typename Traits::body::context&>(static_cast<typename Traits::body&>(*part));
+        return detail::ctx<Traits, NodeOrMixin<Traits>>(part);
     }
 
     template <template <typename> class NodeOrMixin, typename Traits>
+        requires detail::context_part<Traits, NodeOrMixin<Traits>>
     inline const auto& ctx(const NodeOrMixin<Traits>* part) noexcept
     {
-        return static_cast<const typename Traits::body::context&>(static_cast<const typename Traits::body&>(*part));
+        return detail::ctx<Traits, const NodeOrMixin<Traits>>(part);
     }
 } // namespace nom

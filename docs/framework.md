@@ -48,10 +48,35 @@ service. The free `ctx` helper accesses this context directly without calling a 
 unfinished body. Mixins and nodes each follow recipe order; a mixin constructor must not call a
 service whose construction has not completed.
 
-From a node, `nom::ctx(this)` obtains the same context exposed by the relay. Const
-nodes obtain a const context. A mixin that itself needs this lookup should be a separate
-`Mixin<Traits>` template, contributed through `using context_mixin = Mixin<Traits>`. A nested
-non-template mixin can expose services but does not carry enough information for that lookup.
+From a node, `nom::ctx(this)` obtains the same context exposed by the relay. This form deduces
+the assembly from `Node<Traits>` or a separate `Mixin<Traits>` template. A nested mixin supplies
+the assembly explicitly with `nom::ctx<Traits>(this)`, using its enclosing node's template
+parameter:
+
+```cpp
+template<typename Traits>
+struct publisher_node
+{
+    struct context_mixin
+    {
+        void publish(int price)
+        {
+            nom::ctx<Traits>(this).quote = price;
+        }
+    };
+};
+```
+
+Here another mixin contributes `quote`. Explicit lookup also works from nodes and separate
+mixin templates. Both forms return a reference, preserve the source's constness and are
+`noexcept`. Their constraints reject source types that cannot be cast to the specified
+assembly's context or body. The source must still belong to that live assembly.
+
+Mixins access the combined context directly; nodes reach it through the body. The overloads
+share an internal helper that preserves constness and performs the casts without calling a
+member on an unfinished object.
+During construction, a mixin may use earlier, already constructed services; node constructors
+can use the completed context.
 
 ## Following an event
 
@@ -125,10 +150,10 @@ Node and context storage uses inheritance. Concrete node types must be distinct,
 context-mixin types or clashing public service names can create ambiguous bases or access.
 Use distinct node or mixin types for distinct roles.
 
-`ctx(node)` and `pass_request`/`pass_response` require a node belonging to the corresponding live
-assembly. A separately constructed node does not satisfy that contract. Establish a stable
-owner address before installing callbacks that capture nodes; moving a wired assembly does not
-retarget existing pointers or references.
+`ctx(part)` requires a node or mixin belonging to the specified live assembly;
+`pass_request`/`pass_response` require one of its nodes. Separately constructed components do
+not satisfy that contract. Establish a stable owner address before installing callbacks that
+capture nodes; moving a wired assembly does not retarget existing pointers or references.
 
 ## Migrating code from trading-platform
 

@@ -98,6 +98,49 @@ namespace
     struct statistics_recipe : nom::assembly<statistics_recipe, statistics_node>
     {
     };
+
+    template <typename Traits> struct nested_publisher_node
+    {
+        struct context_mixin
+        {
+            explicit context_mixin(const app_config& config) : starting_quote(nom::ctx<Traits>(this).quote)
+            {
+                // The quote and statistics mixins have already been constructed.
+                publish(starting_quote + 10);
+                if (config.construction_log)
+                    config.construction_log->push_back("nested publisher context");
+            }
+
+            void publish(int price)
+            {
+                auto& shared = nom::ctx<Traits>(this);
+                shared.quote = price;
+                ++shared.updates;
+            }
+
+            int latest() const
+            {
+                return nom::ctx<Traits>(this).quote;
+            }
+
+            int starting_quote;
+        };
+
+        explicit nested_publisher_node(const app_config& config) : initial_quote(nom::ctx<Traits>(this).quote)
+        {
+            if (config.construction_log)
+                config.construction_log->push_back("nested publisher node");
+        }
+
+        int initial_quote;
+    };
+
+    struct nested_assembly : nom::assembly<nested_assembly, quote_node, statistics_node, nested_publisher_node>
+    {
+    };
+
+    template <typename Assembly, typename Part>
+    concept supports_explicit_context = requires(Part* part) { nom::ctx<Assembly>(part); };
 } // namespace
 
 TEST_CASE("A recipe describes node types; its body owns runtime state", "[assembly]")
@@ -165,4 +208,60 @@ TEST_CASE("Context mixins contribute services that can use other mixins", "[asse
     CHECK(services.latest() == 102);
     CHECK(services.updates == 2);
     CHECK(app.get<0>().latest_quote() == services.latest());
+}
+
+TEST_CASE("Nested context mixins access earlier services during construction", "[assembly]")
+{
+    std::vector<std::string> construction_log;
+    nested_assembly::body app(app_config{"paper", 400, &construction_log});
+
+    CHECK(construction_log ==
+          std::vector<std::string>{"quote context", "nested publisher context", "quote node", "nested publisher node"});
+    CHECK(app.ctx().starting_quote == 400);
+    CHECK(app.ctx().quote == 410);
+    CHECK(app.ctx().updates == 1);
+    CHECK(app.get<0>().initial_quote() == 410);
+    CHECK(app.get<2>().initial_quote == 410);
+
+    app.ctx().publish(425);
+    const auto& services = std::as_const(app).ctx();
+    CHECK(services.latest() == 425);
+    CHECK(services.updates == 2);
+    CHECK(app.get<0>().latest_quote() == 425);
+}
+
+TEST_CASE("Explicit context lookup preserves identity and constness for nodes and nested mixins", "[assembly]")
+{
+    using context = nested_assembly::body::context;
+    using mixin = nested_publisher_node<nested_assembly>::context_mixin;
+
+    nested_assembly::body app(app_config{});
+    auto& node = app.get<2>();
+    auto& service = static_cast<mixin&>(app.ctx());
+    const auto& read_only_node = std::as_const(node);
+    const auto& read_only_service = std::as_const(service);
+
+    static_assert(std::is_same_v<decltype(nom::ctx<nested_assembly>(&node)), context&>);
+    static_assert(std::is_same_v<decltype(nom::ctx<nested_assembly>(&service)), context&>);
+    static_assert(std::is_same_v<decltype(nom::ctx<nested_assembly>(&read_only_node)), const context&>);
+    static_assert(std::is_same_v<decltype(nom::ctx<nested_assembly>(&read_only_service)), const context&>);
+    static_assert(noexcept(nom::ctx<nested_assembly>(&node)));
+    static_assert(noexcept(nom::ctx<nested_assembly>(&service)));
+    static_assert(noexcept(nom::ctx<nested_assembly>(&read_only_node)));
+    static_assert(noexcept(nom::ctx<nested_assembly>(&read_only_service)));
+
+    CHECK(&nom::ctx<nested_assembly>(&node) == &app.ctx());
+    CHECK(&nom::ctx<nested_assembly>(&service) == &app.ctx());
+    CHECK(&nom::ctx<nested_assembly>(&read_only_node) == &std::as_const(app).ctx());
+    CHECK(&nom::ctx<nested_assembly>(&read_only_service) == &std::as_const(app).ctx());
+    CHECK(&nom::ctx<nested_assembly>(&node) == &nom::ctx(&node));
+    CHECK(&nom::ctx<nested_assembly>(&read_only_node) == &nom::ctx(&read_only_node));
+
+    static_assert(supports_explicit_context<nested_assembly, mixin>);
+    static_assert(supports_explicit_context<nested_assembly, const mixin>);
+    static_assert(!supports_explicit_context<nested_assembly, int>);
+    static_assert(!supports_explicit_context<nested_assembly, void>);
+    static_assert(!supports_explicit_context<nested_assembly, quote_node<market_recipe>>);
+    static_assert(!supports_explicit_context<market_recipe, mixin>);
+    static_assert(!supports_explicit_context<int, mixin>);
 }

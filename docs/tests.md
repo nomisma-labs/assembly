@@ -5,7 +5,7 @@ Read them in this order, running a suite after reading its node definitions and 
 
 | Suite and source | What to look for |
 |---|---|
-| [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | A recipe versus its runtime body; configuration shared with compatible constructors; context available before nodes; services contributed by several mixins; const access |
+| [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | A recipe versus its runtime body; configuration shared with compatible constructors; context available before nodes; services contributed by several mixins; explicit context lookup from nested mixins, including construction; const access |
 | [`relay_test.cxx`](../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories; compile-time checks for supported routes and valid forwarding sources |
 | [`delegate_test.cxx`](../tests/unit/delegate/delegate_test.cxx) | Concrete overloads versus a named callback interface; owned and borrowed handlers; runtime rebinding; reference results and move-only arguments |
 | [`complex_relay_test.cxx`](../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, a recipe policy and an external callback interface |
