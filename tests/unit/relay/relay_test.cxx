@@ -12,6 +12,24 @@ import nom.assembly;
 
 namespace
 {
+    template <typename Relay, typename... Messages>
+    concept accepts_request =
+        requires(Relay& relay, Messages&&... messages) { relay.request(std::forward<Messages>(messages)...); };
+
+    template <typename Relay, typename... Messages>
+    concept accepts_response =
+        requires(Relay& relay, Messages&&... messages) { relay.respond(std::forward<Messages>(messages)...); };
+
+    template <typename Relay, typename Node, typename... Messages>
+    concept forwards_request = requires(Node* source, Messages&&... messages) {
+        Relay::pass_request(source, std::forward<Messages>(messages)...);
+    };
+
+    template <typename Relay, typename Node, typename... Messages>
+    concept forwards_response = requires(Node* source, Messages&&... messages) {
+        Relay::pass_response(source, std::forward<Messages>(messages)...);
+    };
+
     struct raw_value
     {
         int value;
@@ -172,7 +190,86 @@ namespace
     struct transport_recipe : nom::assembly<transport_recipe, transport_forwarder, transport_receiver>
     {
     };
+
+    struct empty_traits : nom::assembly<empty_traits>
+    {
+    };
 } // namespace
+
+TEST_CASE("Public relay constraints distinguish request and response routes", "[relay]")
+{
+    using relay = nom::relay<routing_recipe>;
+
+    STATIC_REQUIRE(accepts_request<relay, raw_value>);
+    STATIC_REQUIRE(accepts_request<relay, normalized_value>);
+    STATIC_REQUIRE(accepts_request<relay, health_check>);
+    STATIC_REQUIRE(accepts_response<relay, receipt>);
+
+    STATIC_REQUIRE_FALSE(accepts_request<relay, receipt>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, raw_value>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, std::string>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, std::string>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay>);
+}
+
+TEST_CASE("Forwarding constraints consider only nodes beyond the source in the route direction", "[relay]")
+{
+    using relay = nom::relay<routing_recipe>;
+
+    STATIC_REQUIRE(forwards_request<relay, client<routing_recipe>, raw_value>);
+    STATIC_REQUIRE(forwards_request<relay, normalizer<routing_recipe>, normalized_value>);
+    STATIC_REQUIRE(forwards_request<relay, health_monitor<routing_recipe>, normalized_value>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, normalizer<routing_recipe>, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, endpoint<routing_recipe>, normalized_value>);
+
+    STATIC_REQUIRE(forwards_response<relay, endpoint<routing_recipe>, receipt>);
+    STATIC_REQUIRE(forwards_response<relay, health_monitor<routing_recipe>, receipt>);
+    STATIC_REQUIRE(forwards_response<relay, normalizer<routing_recipe>, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, client<routing_recipe>, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, endpoint<routing_recipe>, raw_value>);
+}
+
+TEST_CASE("Invalid forwarding sources and empty assemblies fail constraints without hard errors", "[relay]")
+{
+    using relay = nom::relay<routing_recipe>;
+    using foreign_node = transport_receiver<transport_recipe>;
+    using empty_relay = nom::relay<empty_traits>;
+
+    STATIC_REQUIRE_FALSE(forwards_request<relay, foreign_node, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, foreign_node, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, const client<routing_recipe>, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, const endpoint<routing_recipe>, receipt>);
+
+    STATIC_REQUIRE_FALSE(accepts_request<empty_relay, raw_value>);
+    STATIC_REQUIRE_FALSE(accepts_response<empty_relay, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_request<empty_relay, client<routing_recipe>, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_response<empty_relay, endpoint<routing_recipe>, receipt>);
+}
+
+TEST_CASE("Route constraints preserve argument constness and value categories", "[relay]")
+{
+    using relay = nom::relay<transport_recipe>;
+
+    STATIC_REQUIRE(accepts_request<relay, std::string&>);
+    STATIC_REQUIRE(accepts_request<relay, const std::string&>);
+    STATIC_REQUIRE(accepts_request<relay, std::string>);
+    STATIC_REQUIRE(accepts_request<relay, int&, std::string&>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, const int&, std::string&>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, int&, std::string>);
+
+    STATIC_REQUIRE(accepts_request<relay, std::unique_ptr<int>>);
+    STATIC_REQUIRE(accepts_response<relay, std::unique_ptr<int>>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, std::unique_ptr<int>&>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, std::unique_ptr<int>&>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, const std::unique_ptr<int>>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, const std::unique_ptr<int>>);
+
+    STATIC_REQUIRE(forwards_request<relay, transport_forwarder<transport_recipe>, std::unique_ptr<int>>);
+    STATIC_REQUIRE(forwards_response<relay, transport_receiver<transport_recipe>, std::unique_ptr<int>>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, transport_forwarder<transport_recipe>, std::unique_ptr<int>&>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, transport_receiver<transport_recipe>, std::unique_ptr<int>&>);
+}
 
 TEST_CASE("Requests travel forward and responses return before request returns", "[relay]")
 {

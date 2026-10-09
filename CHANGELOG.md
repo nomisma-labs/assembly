@@ -6,6 +6,14 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+### Fixed
+
+- Relay entry points use named routing constraints, so unsupported calls fail during overload
+  resolution and can be detected with `requires`. Forwarding rejects unrelated source types
+  before searching the remaining nodes, while preserving exact argument forwarding.
+- Relay entry points call handlers directly after constraint checking, removing intermediate
+  dispatch stack frames in debug builds and redundant checks inside the call bodies.
+
 ### Changed
 
 - Synchronized the shared CMake foundation with cmake_template v0.7.0, which drops Metal from the

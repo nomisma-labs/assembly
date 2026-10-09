@@ -14,11 +14,11 @@ The library separates three jobs:
 | Facility | Responsibility | Module source |
 |---|---|---|
 | `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`composition.cppm`](../core/assembly/composition.cppm) |
-| `relay<Recipe>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
+| `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
 | `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../core/assembly/delegate.cppm) |
 
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
-`nom::relay<Recipe>`. Import `nom.assembly`; its
+`nom::relay<Assembly>`. Import `nom.assembly`; its
 [primary interface](../core/assembly/assembly.cppm) re-exports the three partitions above.
 The implementation uses Metal **v2.1.4** headers, pinned in `external/metal`, for
 compile-time type lists. It has no dependency on configuration, logging, networking
@@ -26,13 +26,14 @@ or trading libraries. `complex_relay` is a teaching scenario built with these fa
 
 ## Composing an application
 
-Each node is a class template taking the final recipe as its parameter. The recipe derives from
-`assembly<Recipe, Nodes...>` and can declare types or constants that nodes consume as policies.
+Each node is a class template taking the final assembly as its `Traits` parameter. The application
+declares an `Assembly` type derived from `assembly<Assembly, Nodes...>`, with types or constants
+that nodes consume as policies.
 Traits are ordinary C++ members; there is no special registry of overrides.
 
-`Recipe::body` owns the node subobjects and exposes `get<I>()` in recipe order. A node may declare
+`Assembly::body` owns the node subobjects and exposes `get<I>()` in recipe order. A node may declare
 `context_mixin`; the assembly combines those mixins into `body::context`. A passive node can
-contribute only a context service, without handling any events. `relay<Recipe>` owns the body and
+contribute only a context service, without handling any events. `relay<Assembly>` owns the body and
 exposes its context through `ctx()`.
 
 Construction shares the same argument pack as **const references** with every context mixin and
@@ -49,7 +50,7 @@ service whose construction has not completed.
 
 From a node, `nom::ctx(this)` obtains the same context exposed by the relay. Const
 nodes obtain a const context. A mixin that itself needs this lookup should be a separate
-`Mixin<Recipe>` template, contributed through `using context_mixin = Mixin<Recipe>`. A nested
+`Mixin<Traits>` template, contributed through `using context_mixin = Mixin<Traits>`. A nested
 non-template mixin can expose services but does not carry enough information for that lookup.
 
 ## Following an event
@@ -61,8 +62,8 @@ describe the recipe order, not a requirement to pair every request with one resp
 |---|---|
 | `pipe.request(args...)` | First node, moving forwards |
 | `pipe.respond(args...)` | Last node, moving backwards |
-| `relay<Recipe>::pass_request(this, args...)` | After the current node, moving forwards |
-| `relay<Recipe>::pass_response(this, args...)` | Before the current node, moving backwards |
+| `relay<Traits>::pass_request(this, args...)` | After the current node, moving forwards |
+| `relay<Traits>::pass_response(this, args...)` | Before the current node, moving backwards |
 
 At each step the relay calls the first reachable node whose `on_request(...)` or
 `on_response(...)` accepts the arguments. Unrelated nodes are skipped. A handler decides what
@@ -71,15 +72,23 @@ Returning consumes the event. An observer must explicitly forward if later handl
 also see it. A catch-all handler participates in this same search and can intercept many event
 types, so its position matters.
 
-Calls run synchronously on the caller's thread. Work after a forwarding call executes when the
-downstream call returns, just like nested function calls. A transport callback can introduce a
+Each routing entry point calls its selected handler directly, without an intermediate dispatch
+function or its extra debug stack frame. Calls run synchronously on the caller's thread.
+Work after a forwarding call executes when the downstream call returns, just like nested
+function calls. A transport callback can introduce a
 response later, but the relay supplies no queue, scheduler, locking or ownership for delayed
 events. A node that retains an event must arrange its lifetime.
 
 Matching uses the exact forwarded argument categories, including constness and lvalue/rvalue
 references. Multiple arguments and move-only events are supported. Normal C++ overload
 resolution and conversions still apply; matching is not restricted to identical type names.
-Handler return values are discarded. A missing reachable handler is a compile-time error.
+Handler return values are discarded. The four routing entry points are constrained by named
+concepts: `handles_request`, `handles_response`, `handles_request_after` and
+`handles_response_after`. A missing reachable handler fails the corresponding constraint,
+so a dependent `requires` expression can test whether a call is supported. Forwarding also
+requires an `assembly_node`: the source type must belong to the assembly before the relay
+searches the remaining nodes. These checks use the same forwarded argument categories as
+the actual call. They check the next handler, not the bodies of handlers farther along a route.
 
 ## Connecting a callback boundary
 
@@ -129,7 +138,7 @@ using snake_case names. The old `core` spellings are not compatibility aliases.
 | Previous API | Assembly repository API |
 |---|---|
 | `core::Assembly<Traits, Nodes...>` | `nom::assembly<Traits, Nodes...>` |
-| `core::Relay<Recipe>` | `nom::relay<Recipe>` |
+| `core::Relay<Assembly>` | `nom::relay<Assembly>` |
 | `core::ctx(node)` | `nom::ctx(node)` |
 | `ContextMixin` | `context_mixin` |
 | Assembly `Traits`, `Nodes`, `Body`; body `Context` | `traits`, `nodes`, `body`; body `context` |
@@ -146,8 +155,9 @@ CMake target `nom::assembly` and import `nom.assembly`.
 Two behavior corrections accompany the extraction: relay handler detection now uses the same
 forwarding as invocation, and `delegate_ref` preserves reference results instead of copying them.
 The borrowed wrapper also supports const invocation and propagates the handler's `noexcept`
-contract. Missing routes report a focused assertion instead of additionally indexing beyond
-the candidate list. Const bodies now provide `get<I>()`.
+contract. Missing routes report a failed routing constraint without indexing beyond the
+candidate list; forwarding from an unrelated source fails the `assembly_node` constraint.
+Const bodies now provide `get<I>()`.
 
 Continue with the [executable learning guide](tests.md), which applies this model to a complete
 small application and identifies its services, events, policies, configuration and emitters.

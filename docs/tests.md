@@ -6,7 +6,7 @@ Read them in this order, running a suite after reading its node definitions and 
 | Suite and source | What to look for |
 |---|---|
 | [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | A recipe versus its runtime body; configuration shared with compatible constructors; context available before nodes; services contributed by several mixins; const access |
-| [`relay_test.cxx`](../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories |
+| [`relay_test.cxx`](../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories; compile-time checks for supported routes and valid forwarding sources |
 | [`delegate_test.cxx`](../tests/unit/delegate/delegate_test.cxx) | Concrete overloads versus a named callback interface; owned and borrowed handlers; runtime rebinding; reference results and move-only arguments |
 | [`complex_relay_test.cxx`](../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, a recipe policy and an external callback interface |
 
@@ -29,6 +29,32 @@ Each executable is at `build/dev/tests/unit/<suite>/assembly_<suite>`, where `<s
 build/dev/tests/unit/relay/assembly_relay --list-tests
 build/dev/tests/unit/complex_relay/assembly_complex_relay -s
 ```
+
+## Inspect missing-handler diagnostics
+
+The [`missing_handlers` sandbox](../apps/sandbox/missing_handlers/main.cpp) starts from this
+bidirectional pipeline:
+
+```text
+request_source -> message_handlers -> response_source
+```
+
+`request_source` forwards a request to `message_handlers`; `response_source` forwards a response
+back to the same node. The assembly list leaves `message_handlers` commented out so both routes
+fail to compile:
+
+```bash
+cmake --preset dev
+cmake --build --preset dev --target assembly_sandbox_missing_handlers
+```
+
+The diagnostics identify failed `handles_request_after` and `handles_response_after` constraints
+at the forwarding calls. Uncomment `message_handlers` in the assembly list, repeat the build,
+and run `build/dev/bin/sandbox_missing_handlers` to see the complete pipeline handle request
+`21` and response `42`.
+
+The sandbox is excluded from the default `dev` build. The `complete` preset includes it and
+intentionally fails until the handler node is restored.
 
 ## Read an application through five inventories
 
