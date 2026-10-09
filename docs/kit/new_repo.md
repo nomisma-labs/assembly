@@ -57,9 +57,10 @@ code instead of renaming it:
   `--template-url <url>` instead of setting the URL in the template.
 
 It checks everything first and stops without changing anything if the repo doesn't look like a
-fresh copy of the template. `./bootstrap.sh` validates the initialized repo locally; its regular
-`ci` workflow validates it on GitHub. The new repo starts without example tests; add your own
-code and tests with the recipes in [howto.md](howto.md), then run bootstrap again.
+fresh copy of the template. `./bootstrap.sh` validates the initialized repo locally and enables
+its [git hooks](build.md#git-hooks); its regular `ci` workflow validates it on GitHub. The new
+repo starts without example tests; add your own code and tests with the recipes in
+[howto.md](howto.md), then run bootstrap again.
 Define new Nomisma library APIs in named modules and import them in apps and tests.
 Keep macro headers and third-party dependency headers where needed.
 

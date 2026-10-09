@@ -12,7 +12,7 @@ and generator from the preset rather than bootstrap guessing them from its name.
 Each run deletes only the selected build directories and previous `build/bootstrap/` logs.
 Python compatibility/imports, headers and formatting are always checked; naming is included when
 `clang` is selected. A failed check returns a nonzero exit code. Invalid arguments
-are rejected before cleanup.
+are rejected before cleanup. Bootstrap also enables the [git hooks](#git-hooks) for the clone.
 
 Each step reports `PASS`, `FAIL` or `SKIP`, then a summary and next steps; independent checks
 continue after a failure, and only the current run's logs are kept under `build/bootstrap/`. A
@@ -54,6 +54,8 @@ Only the versioned Clang names exist on Ubuntu (`clang++-19`, not `clang++`), so
 scripts name them explicitly. The installed GCC package is a development snapshot rather than
 a final GCC 16 release. The CI image installs the same tools from Ubuntu packages; package
 revisions without explicit pins are resolved when the image is built.
+Where `clang-format-19` can't come from packages, `pipx install clang-format==19.1.7` installs the
+same formatter from PyPI as `clang-format`; set `CLANG_FORMAT=clang-format` for the checks and hooks.
 
 ## Python environment
 
@@ -338,8 +340,8 @@ To release `x.y.z`:
 | Check | Command |
 |---|---|
 | Python environment | `python3 tools/kit/checks/python.py` |
-| SPDX headers | `python3 tools/kit/checks/headers.py` |
-| Formatting | `tools/kit/checks/format.sh` (`--fix` to reformat) |
+| SPDX headers | `python3 tools/kit/checks/headers.py` (`--staged` for the staged files) |
+| Formatting | `tools/kit/checks/format.sh` (`--fix` to reformat, `--staged` for the staged files) |
 | Naming | `tools/kit/checks/naming.sh` (builds `clang` with `NOM_BUILD_PRESET=complete` to cover every app) |
 | Release tag | `python3 tools/kit/checks/version.py <tag>` |
 
@@ -347,3 +349,25 @@ GitHub Actions (`.github/workflows/ci.yml`) runs the `ci` workflow preset and th
 checks on pushes to `master`, pull requests, manual runs, and `v*` tags. The version check runs
 only on `v*` tags. Build and quality checks run in the CI image `ghcr.io/<owner>/ci`, which
 cmake_template builds from `docker/ci/Dockerfile`.
+
+## Git hooks
+
+`./bootstrap.sh` enables the hooks in `tools/kit/hooks/` for the clone: it sets `core.hooksPath`
+to `tools/kit/hooks` in the clone's `.git/config`, unless the setting already names other hooks.
+Git then runs them on every commit:
+
+| Hook | Checks |
+|---|---|
+| `pre-commit` | the staged copy of each staged file: whitespace errors and conflict markers (`git diff --cached --check`; Markdown may keep trailing spaces), formatting (`format.sh --staged`) and SPDX headers (`headers.py --staged`) |
+| `commit-msg` | the message has no `Co-Authored-By` trailer |
+
+The hooks check what the commit gets, not the working tree: an unformatted change that isn't
+staged doesn't stop a commit, and a fix that isn't staged doesn't help. `git commit -a` stages
+the working copies of tracked files first, so those are checked, and a rejected commit leaves
+nothing staged. For formatting, the hook prints the changes needed and the command that makes
+them; run it, stage the fixes (`git add -p` for a file that also has unstaged changes), and
+commit again. Naming needs a build, so it stays in bootstrap and CI.
+
+Hooks run only in clones that enable them, and `git commit --no-verify` skips them, so CI stays
+the check every change passes. To opt a clone out, point the setting elsewhere, for example
+`git config core.hooksPath .git/hooks`; bootstrap leaves it alone from then on.

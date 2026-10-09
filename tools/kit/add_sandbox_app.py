@@ -8,6 +8,7 @@
 Creates apps/sandbox/<name>/ with a main.cpp and a CMakeLists.txt that builds it as
 bin/sandbox_<name>, linked to the repo's main library if it has one. apps/sandbox/CMakeLists.txt
 registers every experiment it finds. Experiments use BUILD_FOR complete, so the complete preset builds them.
+They are git-ignored, so they stay in the clone; git add -f commits one that is worth sharing.
 Write down what an experiment shows (in cmake_template: docs/lab/).
 """
 
@@ -49,7 +50,8 @@ def main() -> int:
     (experiment / "main.cpp").write_text(
         header("//") + "\n#include <cstdio>\n\nint main()\n{\n"
         f'    std::puts("sandbox: {name}");\n    return 0;\n}}\n')
-    print(f"added {experiment.relative_to(ROOT)}: build/complete/bin/sandbox_{name} after cmake --workflow --preset complete")
+    print(f"added {experiment.relative_to(ROOT)} (git-ignored): build/complete/bin/sandbox_{name} "
+          "after cmake --workflow --preset complete")
     return 0
 
 

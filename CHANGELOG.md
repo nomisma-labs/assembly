@@ -19,6 +19,9 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 - Synchronized the shared CMake foundation with cmake_template v0.7.0, which drops Metal from the
   kit: `cmake/assembly/metal.cmake` now provides `nom_find_metal()`. The `nom::metal` target and
   the installed `nom_metal` package are unchanged.
+- Synchronized the shared tools with cmake_template v0.8.1: `./bootstrap.sh` enables git hooks
+  that check each commit's staged files (whitespace, formatting, SPDX headers) and reject
+  `Co-Authored-By` trailers, and sandbox experiments are git-ignored.
 
 ## [0.1.0] - 2026-10-03
 

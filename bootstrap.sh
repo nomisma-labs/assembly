@@ -66,6 +66,8 @@ Other build directories are preserved.
 
 Python compatibility/imports, SPDX headers and formatting are checked on every run.
 Naming is included when clang is selected.
+The git hooks in tools/kit/hooks are enabled for this clone (core.hooksPath), unless
+core.hooksPath already names other hooks.
 Each step reports PASS, FAIL or SKIP; failures return exit code 1.
 Current logs are kept in build/bootstrap/.
 
@@ -239,6 +241,20 @@ for preset in "${presets[@]}"; do
     fi
 done
 run_step 'Required tools' have_tools "${required_tools[@]}"
+
+# The hooks check each commit's staged content (docs/kit/build.md#git-hooks). The setting lives
+# in this clone's .git/config; the relative path resolves in each worktree. Hooks chosen
+# another way, including an opt-out to .git/hooks, are left alone.
+if have_tools git && git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    hooks_path=$(git config --get core.hooksPath)
+    if [[ -z $hooks_path || $hooks_path == tools/kit/hooks ]]; then
+        run_step 'Git hooks (core.hooksPath = tools/kit/hooks)' git config --local core.hooksPath tools/kit/hooks
+    else
+        record SKIP 'Git hooks' "core.hooksPath is $hooks_path; left as it is"
+    fi
+else
+    record SKIP 'Git hooks' 'not a git checkout'
+fi
 
 python_ready=false
 if have_tools python3 git; then

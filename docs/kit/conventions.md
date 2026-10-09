@@ -88,6 +88,9 @@ Target names are global in a superbuild, so every target carries its project's n
 | Naming | `.clang-tidy` (readability-identifier-naming); `tools/kit/checks/naming.sh` | rename by hand |
 | License header | `python3 tools/kit/checks/headers.py` | add the header below |
 
+The pre-commit hook runs the formatting and header checks on each commit's staged files
+([build.md](build.md#git-hooks)).
+
 Every source file (C++, CMake, Python, shell, YAML, Dockerfile) starts with, after an optional shebang:
 
 ```cpp

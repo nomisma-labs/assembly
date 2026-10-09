@@ -24,6 +24,7 @@ repo's `AGENTS.md` imports it and adds the repo's own rules.
   interfaces and partitions use `.cppm`, implementation units use `.cpp`.
 - `apps/<app>/`: executables; optional `config/` is collected into `build/<preset>/config/<app>/` and installed with the app.
 - `apps/sandbox/`: experiments, normally `BUILD_FOR complete`; also buildable explicitly in other presets.
+  They are git-ignored and stay in the clone; don't commit one unless asked.
 - `tests/unit/<suite>/` or inline `<code dir>/tests/<suite>/`: Catch2 unit tests, labeled `unit`.
   Catch2 is found at the project root when tests are enabled, before code directories.
 - `tests/integration/`: library usage and installation checks, labeled `integration`.
@@ -47,6 +48,9 @@ a Python package, a dependency, an experiment.
 - C++ test sources use `*_test.cxx` in both unit and integration tests; regular sources use `.cpp`.
 - Every source file starts with the SPDX header; `python3 tools/kit/checks/headers.py` checks it.
 - Format with `tools/kit/checks/format.sh --fix`.
+- Commits run the git hooks in `tools/kit/hooks/` once bootstrap has enabled them. Never skip them
+  with `--no-verify`: fix what they report, stage the fixes and commit again. Commit messages carry
+  no `Co-Authored-By` trailers ([build.md](build.md#git-hooks)).
 - Add targets with the kit (`nom_lib`, `nom_app`, `nom_python_module`, `nom_c2test`), not raw CMake.
 - Python packaging mechanisms belong in the template; derived repos declare package metadata,
   bindings, dependencies and runtime libraries through the shared facilities.

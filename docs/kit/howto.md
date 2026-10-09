@@ -303,7 +303,8 @@ environment. Change shared mechanisms in the template, then synchronize them int
 run `cmake --workflow --preset complete`, or build its target explicitly in another preset. If an
 experiment has its own support libraries, mark them `EXCLUDE_FROM_ALL TRUE` so they build only
 when a dependent app is requested. Experiments that need third-party code fetch it in their
-own `CMakeLists.txt`.
+own `CMakeLists.txt`. Experiments are git-ignored (`/apps/sandbox/*/` in `.gitignore`), so they
+stay in the clone; when one is worth sharing, commit it by force with `git add -f`.
 
 ## A release
 
