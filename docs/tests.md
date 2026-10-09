@@ -1,14 +1,14 @@
 # Learn the framework through tests
 
 The four unit suites are small applications with assertions about their observable behavior.
-Read them in this order, running a suite after reading its node definitions and recipe:
+Read them in this order, running a suite after reading its node and assembly definitions:
 
 | Suite and source | What to look for |
 |---|---|
-| [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | A recipe versus its runtime body; initialization arguments shared with compatible constructors; rejection of argument packs no component accepts; copying node and context state; context available before nodes; services contributed by several mixins; explicit context lookup from nested mixins, including construction; const access |
+| [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | An assembly definition versus its runtime body; initialization arguments shared with compatible constructors; rejection of argument packs no component accepts; copying node and context state; context available before nodes; services contributed by several mixins; explicit context lookup from nested mixins, including construction; const access |
 | [`relay_test.cxx`](../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories; compile-time checks for supported routes and valid forwarding sources |
 | [`delegate_test.cxx`](../tests/unit/delegate/delegate_test.cxx) | Concrete overloads versus a named callback interface; owned and borrowed handlers; runtime rebinding; reference results and move-only arguments |
-| [`complex_relay_test.cxx`](../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, a recipe policy and an external callback interface |
+| [`complex_relay_test.cxx`](../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, an assembly trait and an external callback interface |
 
 Each suite imports `nom.assembly`, so its lessons also check the exported
 API. Catch2 macros and standard-library declarations still come from headers. From the
@@ -99,14 +99,14 @@ context interaction that produced it.
 
 The market-data node does not need forwarding overloads for order traffic: the relay skips it.
 A rejection starts *before* the risk node on the reverse route, so it never calls risk's own
-`on_response`. A fill originates farther along the recipe and does visit that response handler.
+`on_response`. A fill originates farther along the node list and does visit that response handler.
 
-### 3. Which recipe policies change behavior, and who reads them?
+### 3. Which assembly traits change behavior, and who reads them?
 
-`order_recipe::lot_size` is `1`; `round_lot_recipe::lot_size` is `10`. Both recipes compose the
+`order_assembly::lot_size` is `1`; `round_lot_assembly::lot_size` is `10`. Both assemblies compose the
 same node templates. Only `risk_check` reads this value, requiring a positive quantity divisible
-by the lot size. With the second recipe, quantity `3` is rejected while `10` is accepted when
-cash permits. This is a compile-time policy chosen by the recipe, independent of runtime
+by the lot size. With the second assembly, quantity `3` is rejected while `10` is accepted when
+cash permits. This is a compile-time trait declared on the assembly, independent of runtime
 configuration. No framework-specific override mechanism is required.
 
 ### 4. Which configuration values does each component read?
@@ -160,7 +160,7 @@ a relay. A quote update changes the next order's notional; configuration determi
 cash and reported venue. The producer needs only the callback interface. Its adapter captures
 the relay by reference, making the ownership relationship visible in the test.
 
-The recipe-policy test changes the lot size while keeping the node templates unchanged. Compare
+The assembly trait test changes the lot size while keeping the node templates unchanged. Compare
 it with the construction and context examples in `assembly_test`, then with the exact argument
 forwarding examples in `relay_test`. Together they distinguish application policy from routing
 and storage mechanics.

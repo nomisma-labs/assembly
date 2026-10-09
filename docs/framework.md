@@ -2,7 +2,7 @@
 
 An assembly describes an application as an ordered collection of nodes. Each node owns a
 responsibility: validate a command, adapt a transport, maintain shared state, or consume a result.
-The recipe makes those responsibilities and their communication order visible in one place.
+The assembly definition makes those responsibilities and their communication order visible in one place.
 
 Start with [How to understand Assembly/Relay applications](understanding_applications.md) when
 reading an application. This guide explains the framework contracts behind that reading method.
@@ -34,7 +34,7 @@ declares an `Assembly` type derived from `assembly<Assembly, Nodes...>`, with ty
 that nodes consume as policies.
 Traits are ordinary C++ members; there is no special registry of overrides.
 
-`Assembly::body` owns the node subobjects and exposes `get<I>()` in recipe order. A node may declare
+`Assembly::body` owns the node subobjects and exposes `get<I>()` in declared node order. A node may declare
 `context_mixin`; the assembly combines those mixins into `body::context`. A passive node can
 contribute only a context service, without handling any events. `relay<Assembly>` owns the body and
 exposes its context through `ctx()`.
@@ -54,7 +54,7 @@ move-only ownership. Retained references must outlive their consumers.
 
 All context mixins are constructed before any node, so a node constructor can acquire a shared
 service. The free `ctx` helper accesses this context directly without calling a member on the
-unfinished body. Mixins and nodes each follow recipe order; a mixin constructor must not call a
+unfinished body. Mixins and nodes each follow declared node order; a mixin constructor must not call a
 service whose construction has not completed.
 
 From a node, `nom::ctx(this)` obtains the same context exposed by the relay. This form deduces
@@ -90,7 +90,7 @@ can use the completed context.
 ## Following an event
 
 Requests travel towards later nodes; responses travel towards earlier nodes. These directions
-describe the recipe order, not a requirement to pair every request with one response.
+describe the declared node order, not a requirement to pair every request with one response.
 
 | Call | Where matching begins |
 |---|---|
@@ -128,7 +128,7 @@ the actual call. They check the next handler, not the bodies of handlers farther
 
 Use `delegate` when a component emits several typed callbacks through one interface. A transport
 can declare connection and data callbacks while a node adapts those callbacks into relay events.
-This keeps the transport independent of the application recipe.
+This keeps the transport independent of the application's assembly definition.
 
 | Form | Storage and intended use |
 |---|---|

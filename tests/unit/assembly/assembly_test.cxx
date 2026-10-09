@@ -87,15 +87,15 @@ namespace
         using context_mixin = publisher_context<Traits>;
     };
 
-    struct market_recipe : nom::assembly<market_recipe, quote_node, statistics_node, publisher_node>
+    struct market_assembly : nom::assembly<market_assembly, quote_node, statistics_node, publisher_node>
     {
     };
 
-    struct empty_recipe : nom::assembly<empty_recipe>
+    struct empty_assembly : nom::assembly<empty_assembly>
     {
     };
 
-    struct statistics_recipe : nom::assembly<statistics_recipe, statistics_node>
+    struct statistics_assembly : nom::assembly<statistics_assembly, statistics_node>
     {
     };
 
@@ -231,20 +231,20 @@ namespace
     concept supports_explicit_context = requires(Part* part) { nom::ctx<Assembly>(part); };
 } // namespace
 
-TEST_CASE("A recipe describes node types; its body owns runtime state", "[assembly]")
+TEST_CASE("An assembly describes node types; its body owns runtime state", "[assembly]")
 {
-    static_assert(std::is_same_v<market_recipe::traits, market_recipe>);
-    static_assert(market_recipe::size == 3);
-    static_assert(empty_recipe::size == 0);
-    empty_recipe::body empty;
+    static_assert(std::is_same_v<market_assembly::traits, market_assembly>);
+    static_assert(market_assembly::size == 3);
+    static_assert(empty_assembly::size == 0);
+    empty_assembly::body empty;
     CHECK(&empty.ctx() == &std::as_const(empty).ctx());
 
-    statistics_recipe::body statistics;
+    statistics_assembly::body statistics;
     CHECK(statistics.get<0>().ready);
     CHECK(statistics.ctx().updates == 0);
 
-    market_recipe::body first(app_config{});
-    market_recipe::body second(app_config{});
+    market_assembly::body first(app_config{});
+    market_assembly::body second(app_config{});
     first.ctx().publish(120);
     CHECK(first.ctx().quote == 120);
     CHECK(second.ctx().quote == 100);
@@ -254,7 +254,7 @@ TEST_CASE("A recipe describes node types; its body owns runtime state", "[assemb
 TEST_CASE("Configuration is broadcast to every compatible node and context mixin", "[assembly]")
 {
     const app_config config{"test venue", 240};
-    market_recipe::body app(config);
+    market_assembly::body app(config);
 
     CHECK(app.ctx().venue == "test venue");
     CHECK(app.ctx().quote == 240);
@@ -265,19 +265,19 @@ TEST_CASE("Configuration is broadcast to every compatible node and context mixin
 
 TEST_CASE("Default-only assemblies reject unused construction arguments", "[assembly]")
 {
-    static_assert(std::is_default_constructible_v<statistics_recipe::body>);
-    static_assert(std::is_default_constructible_v<nom::relay<statistics_recipe>>);
-    static_assert(!std::is_constructible_v<statistics_recipe::body, const app_config&>);
-    static_assert(!std::is_constructible_v<nom::relay<statistics_recipe>, const app_config&>);
+    static_assert(std::is_default_constructible_v<statistics_assembly::body>);
+    static_assert(std::is_default_constructible_v<nom::relay<statistics_assembly>>);
+    static_assert(!std::is_constructible_v<statistics_assembly::body, const app_config&>);
+    static_assert(!std::is_constructible_v<nom::relay<statistics_assembly>, const app_config&>);
 
-    static_assert(std::is_default_constructible_v<empty_recipe::body>);
-    static_assert(std::is_default_constructible_v<nom::relay<empty_recipe>>);
-    static_assert(!std::is_constructible_v<empty_recipe::body, const app_config&>);
-    static_assert(!std::is_constructible_v<nom::relay<empty_recipe>, const app_config&>);
+    static_assert(std::is_default_constructible_v<empty_assembly::body>);
+    static_assert(std::is_default_constructible_v<nom::relay<empty_assembly>>);
+    static_assert(!std::is_constructible_v<empty_assembly::body, const app_config&>);
+    static_assert(!std::is_constructible_v<nom::relay<empty_assembly>, const app_config&>);
 
-    nom::relay<statistics_recipe> statistics;
+    nom::relay<statistics_assembly> statistics;
     CHECK(statistics.ctx().updates == 0);
-    nom::relay<empty_recipe> empty;
+    nom::relay<empty_assembly> empty;
     CHECK(&empty.ctx() == &std::as_const(empty).ctx());
 }
 
@@ -383,7 +383,7 @@ TEST_CASE("Copying a mutable body or relay preserves node and context state", "[
 TEST_CASE("The context is ready before node construction begins", "[assembly]")
 {
     std::vector<std::string> construction_log;
-    market_recipe::body app(app_config{"paper", 310, &construction_log});
+    market_assembly::body app(app_config{"paper", 310, &construction_log});
 
     CHECK(construction_log == std::vector<std::string>{"quote context", "quote node"});
     CHECK(app.get<0>().initial_quote() == 310);
@@ -391,10 +391,10 @@ TEST_CASE("The context is ready before node construction begins", "[assembly]")
 
 TEST_CASE("Node access and context lookup preserve constness", "[assembly]")
 {
-    market_recipe::body app(app_config{});
+    market_assembly::body app(app_config{});
     auto& node = app.get<0>();
     const auto& read_only = std::as_const(app);
-    static_assert(std::is_same_v<decltype(read_only.get<0>()), const quote_node<market_recipe>&>);
+    static_assert(std::is_same_v<decltype(read_only.get<0>()), const quote_node<market_assembly>&>);
     static_assert(std::is_const_v<std::remove_reference_t<decltype(nom::ctx(&read_only.get<0>()))>>);
 
     CHECK(&nom::ctx(&node) == &app.ctx());
@@ -405,7 +405,7 @@ TEST_CASE("Node access and context lookup preserve constness", "[assembly]")
 
 TEST_CASE("Context mixins contribute services that can use other mixins", "[assembly]")
 {
-    market_recipe::body app(app_config{});
+    market_assembly::body app(app_config{});
     app.ctx().publish(101);
     app.ctx().publish(102);
 
@@ -466,7 +466,7 @@ TEST_CASE("Explicit context lookup preserves identity and constness for nodes an
     static_assert(supports_explicit_context<nested_assembly, const mixin>);
     static_assert(!supports_explicit_context<nested_assembly, int>);
     static_assert(!supports_explicit_context<nested_assembly, void>);
-    static_assert(!supports_explicit_context<nested_assembly, quote_node<market_recipe>>);
-    static_assert(!supports_explicit_context<market_recipe, mixin>);
+    static_assert(!supports_explicit_context<nested_assembly, quote_node<market_assembly>>);
+    static_assert(!supports_explicit_context<market_assembly, mixin>);
     static_assert(!supports_explicit_context<int, mixin>);
 }

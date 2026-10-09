@@ -186,25 +186,26 @@ namespace
 
     // Requests: client -> [market_data skipped] -> risk -> execution.
     // Reports: execution -> risk -> [market_data skipped] -> client.
-    struct order_recipe : nom::assembly<order_recipe, order_client, market_data, risk_check, paper_execution>
+    struct order_assembly : nom::assembly<order_assembly, order_client, market_data, risk_check, paper_execution>
     {
         static constexpr int lot_size = 1;
     };
 
-    // Recipes are their own traits. The same risk node reads a different policy here.
-    struct round_lot_recipe : nom::assembly<round_lot_recipe, order_client, market_data, risk_check, paper_execution>
+    // Assemblies supply their own traits. The same risk node reads a different policy here.
+    struct round_lot_assembly
+        : nom::assembly<round_lot_assembly, order_client, market_data, risk_check, paper_execution>
     {
         static constexpr int lot_size = 10;
     };
 
-    static_assert(!std::is_default_constructible_v<nom::relay<order_recipe>>);
-    static_assert(!std::is_constructible_v<nom::relay<order_recipe>, int>);
-    static_assert(std::is_constructible_v<nom::relay<order_recipe>, const app_config&>);
+    static_assert(!std::is_default_constructible_v<nom::relay<order_assembly>>);
+    static_assert(!std::is_constructible_v<nom::relay<order_assembly>, int>);
+    static_assert(std::is_constructible_v<nom::relay<order_assembly>, const app_config&>);
 } // namespace
 
 TEST_CASE("An order reserves shared cash and returns a fill through the reverse route", "[complex_relay]")
 {
-    nom::relay<order_recipe> app(app_config{});
+    nom::relay<order_assembly> app(app_config{});
     app.request(submit_order{2});
 
     REQUIRE(app.ctx().reports.size() == 1);
@@ -218,7 +219,7 @@ TEST_CASE("An order reserves shared cash and returns a fill through the reverse 
 
 TEST_CASE("Risk originates a rejection and consumes an unaffordable order", "[complex_relay]")
 {
-    nom::relay<order_recipe> app(app_config{});
+    nom::relay<order_assembly> app(app_config{});
     app.request(submit_order{6});
 
     REQUIRE(app.ctx().reports.size() == 1);
@@ -230,9 +231,9 @@ TEST_CASE("Risk originates a rejection and consumes an unaffordable order", "[co
 
 TEST_CASE("A fixed callback interface admits external events into the static assembly", "[complex_relay]")
 {
-    nom::relay<order_recipe> app(app_config{1000, 120, "test venue"});
+    nom::relay<order_assembly> app(app_config{1000, 120, "test venue"});
 
-    // An input adapter can store this fixed interface without knowing the recipe type.
+    // An input adapter can store this fixed interface without knowing the assembly type.
     // The callback borrows app: its owner must keep the relay alive while callbacks can run.
     using input_events = nom::events_delegate_t<const submit_order&, const quote_update&>;
     input_events ingress([&app](const auto& event) { app.request(event); });
@@ -247,9 +248,9 @@ TEST_CASE("A fixed callback interface admits external events into the static ass
     CHECK(services.reports.front().detail == "test venue");
 }
 
-TEST_CASE("Changing a recipe trait changes the policy consumed by its risk node", "[complex_relay]")
+TEST_CASE("Changing an assembly trait changes the policy consumed by its risk node", "[complex_relay]")
 {
-    nom::relay<round_lot_recipe> app(app_config{2000, 100, "round lots"});
+    nom::relay<round_lot_assembly> app(app_config{2000, 100, "round lots"});
     app.request(submit_order{3});
     app.request(submit_order{10});
 

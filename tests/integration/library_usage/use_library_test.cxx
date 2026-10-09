@@ -33,7 +33,7 @@ namespace sample
         }
     };
 
-    struct recipe : nom::assembly<recipe, results, sensor>
+    struct sensor_assembly : nom::assembly<sensor_assembly, results, sensor>
     {
         static constexpr int scale = 2;
     };
@@ -41,7 +41,7 @@ namespace sample
 
 int main()
 {
-    nom::relay<sample::recipe> app;
+    nom::relay<sample::sensor_assembly> app;
     auto handler = nom::delegate{[&app](int value) { app.request(value); }};
     const auto borrowed = nom::delegate_ref{handler};
     nom::events_delegate_t<int> callback = borrowed;

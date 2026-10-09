@@ -143,7 +143,7 @@ namespace nom
 
 export namespace nom
 {
-    // For context lookup and relay routing, Traits is the final recipe derived from this specialization.
+    // For context lookup and relay routing, Traits is the final assembly type derived from this specialization.
     template <typename Traits, template <typename> class... Nodes> struct assembly
     {
         using traits = Traits;

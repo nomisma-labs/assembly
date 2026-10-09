@@ -118,7 +118,7 @@ namespace
         }
     };
 
-    struct routing_recipe : nom::assembly<routing_recipe, client, normalizer, health_monitor, endpoint>
+    struct routing_assembly : nom::assembly<routing_assembly, client, normalizer, health_monitor, endpoint>
     {
     };
 
@@ -187,7 +187,7 @@ namespace
         }
     };
 
-    struct transport_recipe : nom::assembly<transport_recipe, transport_forwarder, transport_receiver>
+    struct transport_assembly : nom::assembly<transport_assembly, transport_forwarder, transport_receiver>
     {
     };
 
@@ -198,7 +198,7 @@ namespace
 
 TEST_CASE("Public relay constraints distinguish request and response routes", "[relay]")
 {
-    using relay = nom::relay<routing_recipe>;
+    using relay = nom::relay<routing_assembly>;
 
     STATIC_REQUIRE(accepts_request<relay, raw_value>);
     STATIC_REQUIRE(accepts_request<relay, normalized_value>);
@@ -215,41 +215,41 @@ TEST_CASE("Public relay constraints distinguish request and response routes", "[
 
 TEST_CASE("Forwarding constraints consider only nodes beyond the source in the route direction", "[relay]")
 {
-    using relay = nom::relay<routing_recipe>;
+    using relay = nom::relay<routing_assembly>;
 
-    STATIC_REQUIRE(forwards_request<relay, client<routing_recipe>, raw_value>);
-    STATIC_REQUIRE(forwards_request<relay, normalizer<routing_recipe>, normalized_value>);
-    STATIC_REQUIRE(forwards_request<relay, health_monitor<routing_recipe>, normalized_value>);
-    STATIC_REQUIRE_FALSE(forwards_request<relay, normalizer<routing_recipe>, raw_value>);
-    STATIC_REQUIRE_FALSE(forwards_request<relay, endpoint<routing_recipe>, normalized_value>);
+    STATIC_REQUIRE(forwards_request<relay, client<routing_assembly>, raw_value>);
+    STATIC_REQUIRE(forwards_request<relay, normalizer<routing_assembly>, normalized_value>);
+    STATIC_REQUIRE(forwards_request<relay, health_monitor<routing_assembly>, normalized_value>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, normalizer<routing_assembly>, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, endpoint<routing_assembly>, normalized_value>);
 
-    STATIC_REQUIRE(forwards_response<relay, endpoint<routing_recipe>, receipt>);
-    STATIC_REQUIRE(forwards_response<relay, health_monitor<routing_recipe>, receipt>);
-    STATIC_REQUIRE(forwards_response<relay, normalizer<routing_recipe>, receipt>);
-    STATIC_REQUIRE_FALSE(forwards_response<relay, client<routing_recipe>, receipt>);
-    STATIC_REQUIRE_FALSE(forwards_response<relay, endpoint<routing_recipe>, raw_value>);
+    STATIC_REQUIRE(forwards_response<relay, endpoint<routing_assembly>, receipt>);
+    STATIC_REQUIRE(forwards_response<relay, health_monitor<routing_assembly>, receipt>);
+    STATIC_REQUIRE(forwards_response<relay, normalizer<routing_assembly>, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, client<routing_assembly>, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, endpoint<routing_assembly>, raw_value>);
 }
 
 TEST_CASE("Invalid forwarding sources and empty assemblies fail constraints without hard errors", "[relay]")
 {
-    using relay = nom::relay<routing_recipe>;
-    using foreign_node = transport_receiver<transport_recipe>;
+    using relay = nom::relay<routing_assembly>;
+    using foreign_node = transport_receiver<transport_assembly>;
     using empty_relay = nom::relay<empty_traits>;
 
     STATIC_REQUIRE_FALSE(forwards_request<relay, foreign_node, raw_value>);
     STATIC_REQUIRE_FALSE(forwards_response<relay, foreign_node, receipt>);
-    STATIC_REQUIRE_FALSE(forwards_request<relay, const client<routing_recipe>, raw_value>);
-    STATIC_REQUIRE_FALSE(forwards_response<relay, const endpoint<routing_recipe>, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, const client<routing_assembly>, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, const endpoint<routing_assembly>, receipt>);
 
     STATIC_REQUIRE_FALSE(accepts_request<empty_relay, raw_value>);
     STATIC_REQUIRE_FALSE(accepts_response<empty_relay, receipt>);
-    STATIC_REQUIRE_FALSE(forwards_request<empty_relay, client<routing_recipe>, raw_value>);
-    STATIC_REQUIRE_FALSE(forwards_response<empty_relay, endpoint<routing_recipe>, receipt>);
+    STATIC_REQUIRE_FALSE(forwards_request<empty_relay, client<routing_assembly>, raw_value>);
+    STATIC_REQUIRE_FALSE(forwards_response<empty_relay, endpoint<routing_assembly>, receipt>);
 }
 
 TEST_CASE("Route constraints preserve argument constness and value categories", "[relay]")
 {
-    using relay = nom::relay<transport_recipe>;
+    using relay = nom::relay<transport_assembly>;
 
     STATIC_REQUIRE(accepts_request<relay, std::string&>);
     STATIC_REQUIRE(accepts_request<relay, const std::string&>);
@@ -265,15 +265,15 @@ TEST_CASE("Route constraints preserve argument constness and value categories", 
     STATIC_REQUIRE_FALSE(accepts_request<relay, const std::unique_ptr<int>>);
     STATIC_REQUIRE_FALSE(accepts_response<relay, const std::unique_ptr<int>>);
 
-    STATIC_REQUIRE(forwards_request<relay, transport_forwarder<transport_recipe>, std::unique_ptr<int>>);
-    STATIC_REQUIRE(forwards_response<relay, transport_receiver<transport_recipe>, std::unique_ptr<int>>);
-    STATIC_REQUIRE_FALSE(forwards_request<relay, transport_forwarder<transport_recipe>, std::unique_ptr<int>&>);
-    STATIC_REQUIRE_FALSE(forwards_response<relay, transport_receiver<transport_recipe>, std::unique_ptr<int>&>);
+    STATIC_REQUIRE(forwards_request<relay, transport_forwarder<transport_assembly>, std::unique_ptr<int>>);
+    STATIC_REQUIRE(forwards_response<relay, transport_receiver<transport_assembly>, std::unique_ptr<int>>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, transport_forwarder<transport_assembly>, std::unique_ptr<int>&>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, transport_receiver<transport_assembly>, std::unique_ptr<int>&>);
 }
 
 TEST_CASE("Requests travel forward and responses return before request returns", "[relay]")
 {
-    nom::relay<routing_recipe> app;
+    nom::relay<routing_assembly> app;
     app.request(raw_value{7});
 
     CHECK(app.ctx().received == 70);
@@ -288,7 +288,7 @@ TEST_CASE("Requests travel forward and responses return before request returns",
 
 TEST_CASE("A handler can consume an event by omitting pass_request", "[relay]")
 {
-    nom::relay<routing_recipe> app;
+    nom::relay<routing_assembly> app;
     app.request(raw_value{-1});
 
     CHECK(app.ctx().received == 0);
@@ -297,7 +297,7 @@ TEST_CASE("A handler can consume an event by omitting pass_request", "[relay]")
 
 TEST_CASE("A new response enters at the last matching node and travels backward", "[relay]")
 {
-    nom::relay<routing_recipe> app;
+    nom::relay<routing_assembly> app;
     app.respond(receipt{23});
 
     CHECK(app.ctx().received == 23);
@@ -306,7 +306,7 @@ TEST_CASE("A new response enters at the last matching node and travels backward"
 
 TEST_CASE("The event signature selects a route and skips unrelated nodes", "[relay]")
 {
-    nom::relay<routing_recipe> app;
+    nom::relay<routing_assembly> app;
     app.request(health_check{});
 
     CHECK(std::as_const(app).ctx().health_checks == 1);
@@ -315,7 +315,7 @@ TEST_CASE("The event signature selects a route and skips unrelated nodes", "[rel
 
 TEST_CASE("Variadic requests preserve the identity and mutability of lvalue arguments", "[relay]")
 {
-    nom::relay<transport_recipe> app;
+    nom::relay<transport_assembly> app;
     int count = 0;
     std::string text;
     app.request(count, text);
@@ -328,7 +328,7 @@ TEST_CASE("Variadic requests preserve the identity and mutability of lvalue argu
 
 TEST_CASE("A move-only rvalue can cross a forwarding node and transfer ownership", "[relay]")
 {
-    nom::relay<transport_recipe> app;
+    nom::relay<transport_assembly> app;
     auto value = std::make_unique<int>(42);
     const auto* original = value.get();
     app.request(std::move(value));
@@ -341,7 +341,7 @@ TEST_CASE("A move-only rvalue can cross a forwarding node and transfer ownership
 
 TEST_CASE("Handler overload selection retains constness and value category", "[relay]")
 {
-    nom::relay<transport_recipe> app;
+    nom::relay<transport_assembly> app;
     std::string mutable_text = "mutable";
     const std::string immutable_text = "immutable";
     app.request(mutable_text);
@@ -353,7 +353,7 @@ TEST_CASE("Handler overload selection retains constness and value category", "[r
 
 TEST_CASE("Move-only responses preserve ownership transfer along the reverse route", "[relay]")
 {
-    nom::relay<transport_recipe> app;
+    nom::relay<transport_assembly> app;
     auto value = std::make_unique<int>(73);
     const auto* original = value.get();
     app.respond(std::move(value));
