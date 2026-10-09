@@ -14,7 +14,7 @@ Read the node list, then ask five questions about context services, event handle
 configuration, and event origins.
 
 Continue with [the framework guide](docs/framework.md) for the pattern and API, then follow
-[the teaching tests](docs/tests.md): `assembly`, `relay`, `complex_relay`, and `delegate`.
+[the teaching tests](docs/tests.md): `assembly`, `override_traits`, `relay`, `complex_relay`, and `delegate`.
 The complex relay suite is a small application whose events, context services, configuration,
 and trait choices can be traced end to end.
 

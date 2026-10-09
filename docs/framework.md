@@ -12,17 +12,18 @@ interaction: the event signature and the node's position limit who can participa
 useful for services and state with application-wide scope, such as a clock, connection state or
 an order view. Its public interface is the union of the services contributed by the nodes.
 
-The library separates three jobs:
+The library provides these facilities:
 
 | Facility | Responsibility | Module source |
 |---|---|---|
 | `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
+| `use_override_if_defined_t<Traits, NodeTraits>` | Select assembly overrides or a node's default traits | [`override_traits.cppm`](../core/assembly/override_traits.cppm) |
 | `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
 | `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../core/assembly/delegate.cppm) |
 
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
 `nom::relay<Assembly>`. Import `nom.assembly`; its
-[primary interface](../core/assembly/assembly.cppm) re-exports the three partitions above.
+[primary interface](../core/assembly/assembly.cppm) re-exports the partitions above.
 The implementation uses Metal **v2.1.4** headers, pinned in `external/metal`, for
 compile-time type lists. It has no dependency on configuration, logging, networking
 or trading libraries. `complex_relay` is a teaching scenario built with these facilities.
@@ -32,7 +33,8 @@ or trading libraries. `complex_relay` is a teaching scenario built with these fa
 Each node is a class template taking the final assembly as its `Traits` parameter. The application
 declares an `Assembly` type derived from `assembly<Assembly, Nodes...>`, with types or constants
 that nodes consume as policies.
-Traits are ordinary C++ members; there is no special registry of overrides.
+Nodes can read these members directly or use `use_override_if_defined_t` to select overrides
+for their own default traits, as described below.
 
 `Assembly::body` owns the node subobjects and exposes `get<I>()` in declared node order. A node may declare
 `context_mixin`; the assembly combines those mixins into `body::context`. A passive node can
@@ -86,6 +88,53 @@ share an internal helper that preserves constness and performs the casts without
 member on an unfinished object.
 During construction, a mixin may use earlier, already constructed services; node constructors
 can use the completed context.
+
+## Selecting node traits
+
+A node can define its defaults independently of an assembly. The alias
+`nom::use_override_if_defined_t<Traits, NodeTraits>` selects `Traits::override_traits` when
+that type inherits from `NodeTraits` (or is the same class type). Otherwise it selects
+`NodeTraits`, including when no `override_traits` type exists. Matching member names alone
+do not opt a type into an override.
+
+```cpp
+struct risk_traits
+{
+    static constexpr int lot_size = 1;
+};
+
+template<typename Traits>
+struct risk_check
+{
+    using risk_policy = nom::use_override_if_defined_t<Traits, risk_traits>;
+    // Handlers read risk_policy::lot_size.
+};
+
+struct round_lot_assembly : nom::assembly<round_lot_assembly, risk_check>
+{
+    struct override_traits : risk_traits
+    {
+        static constexpr int lot_size = 10;
+    };
+};
+```
+
+An assembly without the nested override uses `risk_traits::lot_size`, which is `1`. Here the
+node selects `round_lot_assembly::override_traits`, whose value is `10`. Unchanged constants
+and type aliases are inherited from the defaults. The nested type can also be an alias to a
+separately defined override type.
+
+One override type may inherit several nodes' default trait types. Each node selects it only
+for a trait family it inherits; unrelated families keep their own defaults. Selection returns
+the whole override type, without merging or filtering its members. Use public bases and resolve
+any conflicting member names in the override; selection uses `std::is_base_of_v` and does not
+remove ordinary C++ access restrictions or ambiguities. Define the override before instantiating
+nodes or context mixins that select it.
+
+Nodes still receive the assembly itself as `Traits`, so relay routing and context lookup keep
+the same owner type. Selecting a policy adds no runtime storage or dispatch. The
+[lot-size example](tests.md#3-which-assembly-traits-change-behavior-and-who-reads-them) demonstrates
+the resulting application behavior.
 
 ## Following an event
 

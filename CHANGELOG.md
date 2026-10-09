@@ -8,6 +8,8 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ### Added
 
+- `nom::use_override_if_defined_t<Traits, NodeTraits>` selects an assembly's `override_traits`
+  when it inherits the node's default traits; missing or unrelated overrides keep the defaults.
 - `nom::ctx<Assembly>(part)` supports nested context mixins without additional owner aliases.
   Explicit and deduced lookup preserve constness, reject unrelated source types and access
   mixin context directly, including already constructed services during construction.
