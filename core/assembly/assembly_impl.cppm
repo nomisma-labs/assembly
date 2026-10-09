@@ -19,7 +19,7 @@ namespace nom
 {
     namespace detail
     {
-        // Configuration is shared: each base receives the same const references or uses its default constructor.
+        // Initialization arguments are shared: each base receives const references or uses its default constructor.
         template <typename Base> struct constructible : Base
         {
             template <typename... Args>
@@ -61,14 +61,29 @@ namespace nom
         template <typename Nodes>
         using collected_context = context_holder<metal::copy_if<Nodes, metal::lambda<has_context>>>;
 
+        // Inspect component constructors themselves: constructible<> also accepts ignored arguments.
+        template <typename Node, typename... Args>
+        concept init_argument_consumer = std::is_constructible_v<Node, const Args&...> || requires {
+            requires std::is_constructible_v<typename Node::context_mixin, const Args&...>;
+        };
+
+        template <typename Nodes, typename... Args> inline constexpr bool init_arguments_are_accepted = false;
+        template <typename... Nodes, typename... Args>
+        inline constexpr bool init_arguments_are_accepted<metal::list<Nodes...>, Args...> =
+            (init_argument_consumer<Nodes, Args...> || ...);
+
+        template <typename Nodes, typename... Args>
+        concept accepts_init_arguments = sizeof...(Args) == 0 || init_arguments_are_accepted<Nodes, Args...>;
+
         // Base order is intentional: every context service exists before the first node is constructed.
         template <typename Nodes> struct assembly_body : collected_context<Nodes>, constructible_nodes<Nodes>
         {
             using context = collected_context<Nodes>;
 
             template <typename... Args>
-                requires(std::is_constructible_v<context, const Args&...> &&
-                         std::is_constructible_v<constructible_nodes<Nodes>, const Args&...>)
+                requires accepts_init_arguments<Nodes, Args...> &&
+                             (std::is_constructible_v<context, const Args&...> &&
+                              std::is_constructible_v<constructible_nodes<Nodes>, const Args&...>)
             explicit assembly_body(const Args&... args) : context(args...), constructible_nodes<Nodes>(args...)
             {
             }

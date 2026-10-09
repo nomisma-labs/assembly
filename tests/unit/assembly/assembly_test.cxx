@@ -99,6 +99,94 @@ namespace
     {
     };
 
+    template <typename Traits> struct optional_config_node
+    {
+        optional_config_node() = default;
+
+        explicit optional_config_node(const app_config& config) : initial_quote(config.initial_quote)
+        {
+        }
+
+        void on_request(int& observed_quote) const
+        {
+            observed_quote = initial_quote;
+        }
+
+        int initial_quote = -1;
+    };
+
+    struct node_config_assembly : nom::assembly<node_config_assembly, optional_config_node, statistics_node>
+    {
+    };
+
+    template <typename Traits> struct mixin_config_node
+    {
+        struct context_mixin
+        {
+            explicit context_mixin(const app_config& config) : initial_quote(config.initial_quote)
+            {
+            }
+
+            int initial_quote;
+        };
+
+        bool ready = true;
+    };
+
+    struct mixin_config_assembly : nom::assembly<mixin_config_assembly, mixin_config_node>
+    {
+    };
+
+    template <typename Traits> struct integer_context_node
+    {
+        struct context_mixin
+        {
+            context_mixin() = default;
+
+            explicit context_mixin(const int& value) : seed(value)
+            {
+            }
+
+            int seed = -1;
+        };
+    };
+
+    struct split_config_assembly : nom::assembly<split_config_assembly, optional_config_node, integer_context_node>
+    {
+    };
+
+    template <typename Traits> struct whole_pack_node
+    {
+        explicit whole_pack_node(const app_config& config, const int& increment)
+            : initial_quote(config.initial_quote + increment)
+        {
+        }
+
+        int initial_quote;
+    };
+
+    struct whole_pack_assembly
+        : nom::assembly<whole_pack_assembly, whole_pack_node, optional_config_node, integer_context_node>
+    {
+    };
+
+    template <typename Traits> struct nonconst_config_node
+    {
+        nonconst_config_node() = default;
+
+        explicit nonconst_config_node(app_config&)
+        {
+        }
+
+        explicit nonconst_config_node(app_config&&)
+        {
+        }
+    };
+
+    struct nonconst_config_assembly : nom::assembly<nonconst_config_assembly, nonconst_config_node>
+    {
+    };
+
     template <typename Traits> struct nested_publisher_node
     {
         struct context_mixin
@@ -173,6 +261,123 @@ TEST_CASE("Configuration is broadcast to every compatible node and context mixin
     CHECK(app.get<0>().initial_quote() == 240);
     CHECK(app.get<1>().ready);
     CHECK(app.ctx().updates == 0);
+}
+
+TEST_CASE("Default-only assemblies reject unused construction arguments", "[assembly]")
+{
+    static_assert(std::is_default_constructible_v<statistics_recipe::body>);
+    static_assert(std::is_default_constructible_v<nom::relay<statistics_recipe>>);
+    static_assert(!std::is_constructible_v<statistics_recipe::body, const app_config&>);
+    static_assert(!std::is_constructible_v<nom::relay<statistics_recipe>, const app_config&>);
+
+    static_assert(std::is_default_constructible_v<empty_recipe::body>);
+    static_assert(std::is_default_constructible_v<nom::relay<empty_recipe>>);
+    static_assert(!std::is_constructible_v<empty_recipe::body, const app_config&>);
+    static_assert(!std::is_constructible_v<nom::relay<empty_recipe>, const app_config&>);
+
+    nom::relay<statistics_recipe> statistics;
+    CHECK(statistics.ctx().updates == 0);
+    nom::relay<empty_recipe> empty;
+    CHECK(&empty.ctx() == &std::as_const(empty).ctx());
+}
+
+TEST_CASE("A node alone can consume configuration while every context mixin defaults", "[assembly]")
+{
+    static_assert(std::is_default_constructible_v<node_config_assembly::body>);
+    static_assert(std::is_default_constructible_v<nom::relay<node_config_assembly>>);
+    static_assert(std::is_constructible_v<node_config_assembly::body, const app_config&>);
+    static_assert(std::is_constructible_v<nom::relay<node_config_assembly>, const app_config&>);
+    static_assert(!std::is_constructible_v<node_config_assembly::body, const std::string&>);
+    static_assert(!std::is_constructible_v<nom::relay<node_config_assembly>, const std::string&>);
+
+    const app_config config{"test venue", 240};
+    node_config_assembly::body app(config);
+    CHECK(app.get<0>().initial_quote == 240);
+    CHECK(app.get<1>().ready);
+    CHECK(app.ctx().updates == 0);
+
+    nom::relay<node_config_assembly> pipeline(config);
+    int observed_quote = 0;
+    pipeline.request(observed_quote);
+    CHECK(observed_quote == 240);
+    CHECK(pipeline.ctx().updates == 0);
+}
+
+TEST_CASE("A context mixin alone can consume configuration while every node defaults", "[assembly]")
+{
+    static_assert(!std::is_default_constructible_v<mixin_config_assembly::body>);
+    static_assert(!std::is_default_constructible_v<nom::relay<mixin_config_assembly>>);
+    static_assert(std::is_constructible_v<mixin_config_assembly::body, const app_config&>);
+    static_assert(std::is_constructible_v<nom::relay<mixin_config_assembly>, const app_config&>);
+    static_assert(!std::is_constructible_v<mixin_config_assembly::body, const std::string&>);
+    static_assert(!std::is_constructible_v<nom::relay<mixin_config_assembly>, const std::string&>);
+
+    const app_config config{"test venue", 240};
+    mixin_config_assembly::body app(config);
+    CHECK(app.ctx().initial_quote == 240);
+    CHECK(app.get<0>().ready);
+    nom::relay<mixin_config_assembly> pipeline(config);
+    CHECK(pipeline.ctx().initial_quote == 240);
+}
+
+TEST_CASE("At least one component must accept the entire construction argument pack", "[assembly]")
+{
+    // Each argument has a consumer on its own; neither component accepts the pair.
+    static_assert(std::is_constructible_v<split_config_assembly::body, const app_config&>);
+    static_assert(std::is_constructible_v<nom::relay<split_config_assembly>, const app_config&>);
+    static_assert(std::is_constructible_v<split_config_assembly::body, const int&>);
+    static_assert(std::is_constructible_v<nom::relay<split_config_assembly>, const int&>);
+    static_assert(!std::is_constructible_v<split_config_assembly::body, const app_config&, const int&>);
+    static_assert(!std::is_constructible_v<nom::relay<split_config_assembly>, const app_config&, const int&>);
+
+    // Adding a full-pack consumer makes construction valid; the partial matches still default.
+    static_assert(std::is_constructible_v<whole_pack_assembly::body, const app_config&, const int&>);
+    static_assert(std::is_constructible_v<nom::relay<whole_pack_assembly>, const app_config&, const int&>);
+    whole_pack_assembly::body app(app_config{"test venue", 240}, 5);
+    CHECK(app.get<0>().initial_quote == 245);
+    CHECK(app.get<1>().initial_quote == -1);
+    CHECK(app.ctx().seed == -1);
+}
+
+TEST_CASE("Mutable and rvalue constructors do not consume shared const construction arguments", "[assembly]")
+{
+    STATIC_REQUIRE(std::is_default_constructible_v<nonconst_config_assembly::body>);
+    STATIC_REQUIRE(std::is_default_constructible_v<nom::relay<nonconst_config_assembly>>);
+    using node = nonconst_config_node<nonconst_config_assembly>;
+    static_assert(std::is_constructible_v<node, app_config&>);
+    static_assert(std::is_constructible_v<node, app_config&&>);
+    static_assert(!std::is_constructible_v<node, const app_config&>);
+
+    static_assert(!std::is_constructible_v<nonconst_config_assembly::body, app_config&>);
+    static_assert(!std::is_constructible_v<nom::relay<nonconst_config_assembly>, app_config&>);
+    static_assert(!std::is_constructible_v<nonconst_config_assembly::body, app_config&&>);
+    static_assert(!std::is_constructible_v<nom::relay<nonconst_config_assembly>, app_config&&>);
+}
+
+TEST_CASE("Copying a mutable body or relay preserves node and context state", "[assembly]")
+{
+    const app_config config{"test venue", 240};
+    node_config_assembly::body original_body(config);
+    original_body.get<0>().initial_quote = 310;
+    original_body.ctx().updates = 7;
+
+    node_config_assembly::body copied_body(original_body);
+    CHECK(copied_body.get<0>().initial_quote == 310);
+    CHECK(copied_body.ctx().updates == 7);
+    copied_body.get<0>().initial_quote = 320;
+    copied_body.ctx().updates = 8;
+    CHECK(original_body.get<0>().initial_quote == 310);
+    CHECK(original_body.ctx().updates == 7);
+
+    nom::relay<node_config_assembly> original_relay(config);
+    original_relay.ctx().updates = 7;
+    nom::relay<node_config_assembly> copied_relay(original_relay);
+    int observed_quote = 0;
+    copied_relay.request(observed_quote);
+    CHECK(observed_quote == 240);
+    CHECK(copied_relay.ctx().updates == 7);
+    copied_relay.ctx().updates = 8;
+    CHECK(original_relay.ctx().updates == 7);
 }
 
 TEST_CASE("The context is ready before node construction begins", "[assembly]")

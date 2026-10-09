@@ -22,6 +22,9 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ### Changed
 
+- Body and relay construction require at least one node or context mixin to accept the full
+  nonempty initialization argument pack as const references. Other components may still default;
+  arguments that every component would ignore are rejected by a constructor constraint.
 - Synchronized the shared CMake foundation with cmake_template v0.7.0, which drops Metal from the
   kit: `cmake/assembly/metal.cmake` now provides `nom_find_metal()`. The `nom::metal` target and
   the installed `nom_metal` package are unchanged.

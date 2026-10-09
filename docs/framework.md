@@ -36,12 +36,18 @@ Traits are ordinary C++ members; there is no special registry of overrides.
 contribute only a context service, without handling any events. `relay<Assembly>` owns the body and
 exposes its context through `ctx()`.
 
-Construction shares the same argument pack as **const references** with every context mixin and
-node. A component accepts the complete pack if it has a compatible constructor; otherwise it
-must be default constructible. Constructor constraints reflect this: a configuration-only
-component makes its body and relay non-default-constructible. Different components can read
-different sections of one configuration. Construction does not select individual arguments or
-transfer move-only ownership. Retained references must outlive their consumers.
+Construction shares the same initialization argument pack as **const references** with every
+context mixin and node. A component accepts the complete pack if it has a compatible constructor;
+otherwise it must be default constructible. For a nonempty pack, at least one node or context mixin must
+accept the **entire pack** as const references. The `accepts_init_arguments` constraint rejects
+arguments that every component would ignore, even if all components can default-construct.
+This check spans nodes and mixins together; either group may supply the accepting constructor.
+Without arguments, ordinary default construction remains available, including for an empty assembly.
+
+These constraints apply to both the body and relay. A component without a default constructor
+makes its body and relay non-default-constructible. Initialization arguments can carry configuration
+data or handles to shared services. Construction does not select individual arguments or transfer
+move-only ownership. Retained references must outlive their consumers.
 
 All context mixins are constructed before any node, so a node constructor can acquire a shared
 service. The free `ctx` helper accesses this context directly without calling a member on the
