@@ -3,6 +3,6 @@
 
 export module nom.assembly;
 
-export import :composition;
+export import :assembly_impl;
 export import :relay;
 export import :delegate;

@@ -13,7 +13,7 @@ module;
 #include <metal/list/size.hpp>
 #include <metal/number/number.hpp>
 
-export module nom.assembly:composition;
+export module nom.assembly:assembly_impl;
 
 namespace nom
 {

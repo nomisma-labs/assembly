@@ -17,7 +17,7 @@ module;
 
 export module nom.assembly:relay;
 
-import :composition;
+import :assembly_impl;
 
 namespace nom
 {

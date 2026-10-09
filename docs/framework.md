@@ -13,7 +13,7 @@ The library separates three jobs:
 
 | Facility | Responsibility | Module source |
 |---|---|---|
-| `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`composition.cppm`](../core/assembly/composition.cppm) |
+| `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
 | `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
 | `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../core/assembly/delegate.cppm) |
 
