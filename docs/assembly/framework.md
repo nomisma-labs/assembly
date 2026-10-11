@@ -185,6 +185,27 @@ requires an `assembly_node`: the source type must belong to the assembly before 
 searches the remaining nodes. These checks use the same forwarded argument categories as
 the actual call. They check the next handler, not the bodies of handlers farther along a route.
 
+### Exceptions during event processing (are meaningless)
+
+Avoid exceptions in node logic and prefer internal code and library APIs that report expected
+failures without throwing. If an operation uses exceptions as part of normal behavior, catch
+them inside the node, around that operation, and translate the failure into an event or
+application state. Do not let these exceptions escape into the relay pipe.
+
+Relay permits exceptions and does not require `noexcept` handlers, preserving compatibility
+with existing code. Exceptions have no recovery meaning in the event flow.
+
+A `try/catch` around `pass_request` or `pass_response` can catch synchronous downstream
+exceptions, but cannot undo effects already performed or protect work deferred to a later
+callback or queue iteration. Event processing provides no rollback; unwinding the C++ stack
+does not reverse the logical event flow.
+
+Treat an exception escaping event processing as fatal. Catch it at the calling application
+boundary, typically an `epoll`-driven event loop: wrap the **whole loop** in `try/catch`, log
+the failure, and call `std::terminate()`. Do not catch each iteration and resume processing
+with potentially inconsistent state. This is the application's responsibility; relay lets
+escaping exceptions propagate.
+
 ## Connecting a callback boundary
 
 Use `delegate` when a component emits several typed callbacks through one interface. A transport
