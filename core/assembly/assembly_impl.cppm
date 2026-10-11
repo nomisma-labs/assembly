@@ -143,11 +143,13 @@ namespace nom
 
 export namespace nom
 {
+    template <typename... Types> using type_list = metal::list<Types...>;
+
     // For context lookup and relay routing, Traits is the final assembly type derived from this specialization.
     template <typename Traits, template <typename> class... Nodes> struct assembly
     {
         using traits = Traits;
-        using nodes = metal::list<Nodes<Traits>...>;
+        using nodes = type_list<Nodes<Traits>...>;
         static constexpr std::size_t size = sizeof...(Nodes);
         using body = detail::assembly_body<nodes>;
     };

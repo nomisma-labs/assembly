@@ -21,6 +21,8 @@ and trait choices can be traced end to end.
 Consumers link the CMake target `nom::assembly` through `find_package(assembly CONFIG REQUIRED)` or
 `FetchContent`, then use `import nom.assembly;`. The installed Assembly package finds
 `nom_metal`, which supplies the Metal headers and license; consumers do not need the source checkout.
+Use `nom::type_list<Types...>` for type lists; it is available from `nom.assembly` without
+including Metal headers.
 
 Unit suites and source/installed-package consumers import `nom.assembly`;
 [the test guide](docs/tests.md) explains how to run the teaching suites.

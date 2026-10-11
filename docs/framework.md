@@ -16,6 +16,7 @@ The library provides these facilities:
 
 | Facility | Responsibility | Module source |
 |---|---|---|
+| `type_list<Types...>` | Declare compile-time type lists | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
 | `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
 | `apply_custom_traits_t<Traits, NodeTraits>` | Apply assembly custom traits or keep node defaults | [`custom_traits.cppm`](../core/assembly/custom_traits.cppm) |
 | `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
@@ -25,7 +26,10 @@ All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` an
 `nom::relay<Assembly>`. Import `nom.assembly`; its
 [primary interface](../core/assembly/assembly.cppm) re-exports the partitions above.
 The implementation uses Metal **v2.1.4** headers, pinned in `external/metal`, for
-compile-time type lists. It has no dependency on configuration, logging, networking
+compile-time type lists. The exported alias `nom::type_list<Types...>` lets applications
+declare these lists without including Metal headers. Applications needing Metal algorithms
+can include their headers explicitly.
+The library has no dependency on configuration, logging, networking
 or trading libraries. `complex_relay` is a teaching scenario built with these facilities.
 
 ## Composing an application
