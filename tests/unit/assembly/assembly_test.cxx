@@ -435,6 +435,37 @@ TEST_CASE("Nested context mixins access earlier services during construction", "
     CHECK(app.get<0>().latest_quote() == 425);
 }
 
+TEST_CASE("A relay preserves assembly construction, context identity and copying", "[assembly]")
+{
+    using relay = nom::relay<nested_assembly>;
+    using mixin = nested_publisher_node<nested_assembly>::context_mixin;
+
+    STATIC_REQUIRE(std::is_constructible_v<relay, const app_config&>);
+    STATIC_REQUIRE_FALSE(std::is_default_constructible_v<relay>);
+    STATIC_REQUIRE_FALSE(std::is_constructible_v<relay, const std::string&>);
+
+    std::vector<std::string> construction_log;
+    relay original(app_config{"paper", 400, &construction_log});
+    CHECK(construction_log ==
+          std::vector<std::string>{"quote context", "nested publisher context", "quote node", "nested publisher node"});
+    CHECK(original.ctx().starting_quote == 400);
+    CHECK(original.ctx().latest() == 410);
+
+    auto& service = static_cast<mixin&>(original.ctx());
+    CHECK(&nom::ctx<nested_assembly>(&service) == &original.ctx());
+    CHECK(&nom::ctx<nested_assembly>(&std::as_const(service)) == &std::as_const(original).ctx());
+
+    original.ctx().publish(425);
+    relay copied(original);
+    CHECK(copied.ctx().starting_quote == 400);
+    CHECK(copied.ctx().latest() == 425);
+    CHECK(copied.ctx().updates == 2);
+    copied.ctx().publish(450);
+    CHECK(std::as_const(copied).ctx().latest() == 450);
+    CHECK(original.ctx().latest() == 425);
+    CHECK(original.ctx().updates == 2);
+}
+
 TEST_CASE("Explicit context lookup preserves identity and constness for nodes and nested mixins", "[assembly]")
 {
     using context = nested_assembly::body::context;

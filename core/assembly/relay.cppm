@@ -7,7 +7,9 @@ module;
 #include <utility>
 
 #include <metal/lambda.hpp>
+#include <metal/list/append.hpp>
 #include <metal/list/at.hpp>
+#include <metal/list/contains.hpp>
 #include <metal/list/drop.hpp>
 #include <metal/list/find.hpp>
 #include <metal/list/find_if.hpp>
@@ -18,11 +20,30 @@ module;
 export module nom.assembly:relay;
 
 import :assembly_impl;
+import :custom_traits;
 
 namespace nom
 {
     namespace detail
     {
+        template <typename Traits> struct request_suppressor
+        {
+            template <typename Event>
+                requires(metal::contains<typename Traits::suppressed_requests, std::remove_cvref_t<Event>>::value != 0)
+            void on_request(Event&&) noexcept
+            {
+            }
+        };
+
+        template <typename Traits> struct response_suppressor
+        {
+            template <typename Event>
+                requires(metal::contains<typename Traits::suppressed_responses, std::remove_cvref_t<Event>>::value != 0)
+            void on_response(Event&&) noexcept
+            {
+            }
+        };
+
         template <typename Node, typename... Messages>
         using has_on_request = metal::number<requires(Node& node, Messages&&... messages) {
             node.on_request(std::forward<Messages>(messages)...);
@@ -48,7 +69,7 @@ namespace nom
         template <typename Nodes, typename Node>
         using nodes_after = metal::drop<Nodes, metal::number<metal::find<Nodes, Node>::value + 1>>;
 
-        // Keep Metal expressions behind booleans so failed constraints report Assembly and Messages
+        // Keep Metal expressions behind booleans so failed constraints report Relay and Messages
         // without expanding the typelist implementation in compiler diagnostics.
         template <typename Assembly, typename Node>
         inline constexpr bool is_assembly_node = metal::find<typename Assembly::nodes, Node>::value < Assembly::size;
@@ -56,50 +77,70 @@ namespace nom
         template <typename Assembly, typename Node>
         concept assembly_node = is_assembly_node<Assembly, Node>;
 
-        template <typename Assembly, typename... Messages>
+        // Each direction has one suppressor after the application nodes (hence "+ 1").
+        template <typename Relay, typename... Messages>
         inline constexpr bool request_is_handled =
-            request_position<typename Assembly::nodes, Messages...>::value < Assembly::size;
+            request_position<typename Relay::nodes, Messages...>::value < Relay::assembly::size + 1;
 
-        template <typename Assembly, typename... Messages>
-        concept handles_request = request_is_handled<Assembly, Messages...>;
+        template <typename Relay, typename... Messages>
+        concept handles_request = request_is_handled<Relay, Messages...>;
 
-        template <typename Assembly, typename... Messages>
+        template <typename Relay, typename... Messages>
         inline constexpr bool response_is_handled =
-            response_position<metal::reverse<typename Assembly::nodes>, Messages...>::value < Assembly::size;
+            response_position<typename Relay::reverse_nodes, Messages...>::value < Relay::assembly::size + 1;
 
-        template <typename Assembly, typename... Messages>
-        concept handles_response = response_is_handled<Assembly, Messages...>;
+        template <typename Relay, typename... Messages>
+        concept handles_response = response_is_handled<Relay, Messages...>;
 
-        template <typename Assembly, typename Node, typename... Messages>
+        template <typename Relay, typename Node, typename... Messages>
         inline constexpr bool request_is_handled_after =
-            request_position<nodes_after<typename Assembly::nodes, Node>, Messages...>::value <
-            metal::size<nodes_after<typename Assembly::nodes, Node>>::value;
+            request_position<nodes_after<typename Relay::nodes, Node>, Messages...>::value <
+            metal::size<nodes_after<typename Relay::nodes, Node>>::value;
 
-        template <typename Assembly, typename Node, typename... Messages>
+        template <typename Relay, typename Node, typename... Messages>
         inline constexpr bool response_is_handled_after =
-            response_position<nodes_after<metal::reverse<typename Assembly::nodes>, Node>, Messages...>::value <
-            metal::size<nodes_after<metal::reverse<typename Assembly::nodes>, Node>>::value;
+            response_position<nodes_after<typename Relay::reverse_nodes, Node>, Messages...>::value <
+            metal::size<nodes_after<typename Relay::reverse_nodes, Node>>::value;
 
         // Check membership before forming a tail: an unknown source would otherwise drop past the list.
-        template <typename Assembly, typename Node, typename... Messages>
+        template <typename Relay, typename Node, typename... Messages>
         concept handles_request_after =
-            assembly_node<Assembly, Node> && request_is_handled_after<Assembly, Node, Messages...>;
+            assembly_node<typename Relay::assembly, Node> && request_is_handled_after<Relay, Node, Messages...>;
 
-        template <typename Assembly, typename Node, typename... Messages>
+        template <typename Relay, typename Node, typename... Messages>
         concept handles_response_after =
-            assembly_node<Assembly, Node> && response_is_handled_after<Assembly, Node, Messages...>;
+            assembly_node<typename Relay::assembly, Node> && response_is_handled_after<Relay, Node, Messages...>;
     } // namespace detail
 } // namespace nom
 
 export namespace nom
 {
+    struct event_suppressors
+    {
+        using suppressed_requests = type_list<>;
+        using suppressed_responses = type_list<>;
+    };
+
     template <typename Assembly> class relay
     {
+        struct event_suppressors : apply_custom_traits_t<Assembly, ::nom::event_suppressors>
+        {
+        };
+
+        using request_suppressor = detail::request_suppressor<event_suppressors>;
+        using response_suppressor = detail::response_suppressor<event_suppressors>;
+        struct body : private request_suppressor, private response_suppressor, public Assembly::body
+        {
+            friend relay;
+
+            using Assembly::body::body;
+        };
+
     public:
-        using assembly_type = Assembly;
+        using assembly = Assembly;
         using context = typename Assembly::body::context;
-        using nodes = typename Assembly::nodes;
-        using reverse_nodes = metal::reverse<nodes>;
+        using nodes = metal::append<typename Assembly::nodes, request_suppressor>;
+        using reverse_nodes = metal::append<metal::reverse<typename Assembly::nodes>, response_suppressor>;
 
         static_assert(std::is_same_v<typename Assembly::traits, Assembly>,
                       "Assembly must derive from assembly<Assembly, Nodes...>");
@@ -107,7 +148,7 @@ export namespace nom
         relay() = default;
 
         template <typename... Args>
-            requires std::is_constructible_v<typename Assembly::body, const Args&...>
+            requires std::is_constructible_v<body, const Args&...>
         explicit relay(const Args&... args) : assembly_(args...)
         {
         }
@@ -123,7 +164,7 @@ export namespace nom
         }
 
         template <typename... Messages>
-            requires detail::handles_request<Assembly, Messages...>
+            requires detail::handles_request<relay, Messages...>
         void request(Messages&&... messages)
         {
             using node = metal::at<nodes, detail::request_position<nodes, Messages...>>;
@@ -131,7 +172,7 @@ export namespace nom
         }
 
         template <typename... Messages>
-            requires detail::handles_response<Assembly, Messages...>
+            requires detail::handles_response<relay, Messages...>
         void respond(Messages&&... messages)
         {
             using node = metal::at<reverse_nodes, detail::response_position<reverse_nodes, Messages...>>;
@@ -139,7 +180,7 @@ export namespace nom
         }
 
         template <typename Node, typename... Messages>
-            requires detail::handles_request_after<Assembly, Node, Messages...>
+            requires detail::handles_request_after<relay, Node, Messages...>
         static void pass_request(Node* source, Messages&&... messages)
         {
             using remaining = detail::nodes_after<nodes, Node>;
@@ -148,7 +189,7 @@ export namespace nom
         }
 
         template <typename Node, typename... Messages>
-            requires detail::handles_response_after<Assembly, Node, Messages...>
+            requires detail::handles_response_after<relay, Node, Messages...>
         static void pass_response(Node* source, Messages&&... messages)
         {
             using remaining = detail::nodes_after<reverse_nodes, Node>;
@@ -157,8 +198,6 @@ export namespace nom
         }
 
     private:
-        using body = typename Assembly::body;
-
         body assembly_;
     };
 } // namespace nom

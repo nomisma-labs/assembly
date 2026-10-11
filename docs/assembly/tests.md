@@ -5,11 +5,11 @@ Read them in this order, running a suite after reading its node and assembly def
 
 | Suite and source | What to look for |
 |---|---|
-| [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | An assembly definition versus its runtime body; initialization arguments shared with compatible constructors; rejection of argument packs no component accepts; copying node and context state; context available before nodes; services contributed by several mixins; explicit context lookup from nested mixins, including construction; const access |
-| [`custom_traits_test.cxx`](../tests/unit/custom_traits/custom_traits_test.cxx) | Default and custom traits, multiple trait families, inherited members, and application inside nodes and context mixins |
-| [`relay_test.cxx`](../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories; compile-time checks for supported routes and valid forwarding sources |
-| [`delegate_test.cxx`](../tests/unit/delegate/delegate_test.cxx) | Concrete overloads versus a named callback interface; owned and borrowed handlers; runtime rebinding; reference results and move-only arguments |
-| [`complex_relay_test.cxx`](../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, an assembly trait and an external callback interface |
+| [`assembly_test.cxx`](../../tests/unit/assembly/assembly_test.cxx) | An assembly definition versus its runtime body; initialization arguments shared with compatible constructors; rejection of argument packs no component accepts; copying node and context state; context available before nodes; services contributed by several mixins; explicit context lookup from nested mixins, including construction; const access |
+| [`custom_traits_test.cxx`](../../tests/unit/custom_traits/custom_traits_test.cxx) | Default and custom traits, multiple trait families, inherited members, and application inside nodes and context mixins |
+| [`relay_test.cxx`](../../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories; optional event suppression; compile-time checks for supported routes and valid forwarding sources |
+| [`delegate_test.cxx`](../../tests/unit/delegate/delegate_test.cxx) | Concrete overloads versus a named callback interface; owned and borrowed handlers; runtime rebinding; reference results and move-only arguments |
+| [`complex_relay_test.cxx`](../../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, an assembly trait and an external callback interface |
 
 Each suite imports `nom.assembly`, so its lessons also check the exported
 API. Catch2 macros and standard-library declarations still come from headers. From the
@@ -31,9 +31,13 @@ build/dev/tests/unit/relay/assembly_relay --list-tests
 build/dev/tests/unit/complex_relay/assembly_complex_relay -s
 ```
 
+The relay suite covers [event suppression](event_suppression.md) in each direction, including
+handler precedence, forwarding to suppressors, empty assemblies, and rejection of unlisted
+events and invalid forwarding sources.
+
 ## Inspect missing-handler diagnostics
 
-The [`missing_handlers` sandbox](../apps/sandbox/missing_handlers/main.cpp) starts from this
+The [`missing_handlers` sandbox](../../apps/sandbox/missing_handlers/main.cpp) starts from this
 bidirectional pipeline:
 
 ```text
@@ -41,8 +45,8 @@ request_source -> message_handlers -> response_source
 ```
 
 `request_source` forwards a request to `message_handlers`; `response_source` forwards a response
-back to the same node. The assembly list leaves `message_handlers` commented out so both routes
-fail to compile:
+back to the same node. Comment out `message_handlers` in the assembly list to make both routes
+fail to compile, then build:
 
 ```bash
 cmake --preset dev
@@ -50,12 +54,12 @@ cmake --build --preset dev --target assembly_sandbox_missing_handlers
 ```
 
 The diagnostics identify failed `handles_request_after` and `handles_response_after` constraints
-at the forwarding calls. Uncomment `message_handlers` in the assembly list, repeat the build,
+at the forwarding calls. Restore `message_handlers` in the assembly list, repeat the build,
 and run `build/dev/bin/sandbox_missing_handlers` to see the complete pipeline handle request
 `21` and response `42`.
 
 The sandbox is excluded from the default `dev` build. The `complete` preset includes it and
-intentionally fails until the handler node is restored.
+fails only while the handler node is deliberately disabled.
 
 ## Read an application through five inventories
 
@@ -174,7 +178,7 @@ and storage mechanics.
 The suites keep framework behavior separate from infrastructure: there are no network calls,
 wall-clock dependencies or filesystem fixtures in the teaching scenarios. Their traces and
 state assertions describe the contract at the call boundary. Build and package integration
-checks are described separately in [build.md](kit/build.md). Both source and installed-package
+checks are described separately in [build.md](../kit/build.md). Both source and installed-package
 consumers import the same public module.
 
-See [framework.md](framework.md) for API contracts, ownership rules and the migration table.
+See [framework.md](framework.md) for API contracts and ownership rules.

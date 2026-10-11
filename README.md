@@ -9,12 +9,12 @@ by `nom.assembly`. Its only library dependency is Metal v2.1.4, pinned in `exter
 provided as `nom::metal` by [cmake/assembly/metal.cmake](cmake/assembly/metal.cmake).
 <!-- repo-description:end -->
 
-**Start here: [How to understand Assembly/Relay applications](docs/understanding_applications.md).**
+**Start here: [How to understand Assembly/Relay applications](docs/assembly/understanding_applications.md).**
 Read the node list, then ask five questions about context services, event handlers, traits,
 configuration, and event origins.
 
-Continue with [the framework guide](docs/framework.md) for the pattern and API, then follow
-[the teaching tests](docs/tests.md): `assembly`, `custom_traits`, `relay`, `complex_relay`, and `delegate`.
+Continue with [the framework guide](docs/assembly/framework.md) for the pattern and API, then follow
+[the teaching tests](docs/assembly/tests.md): `assembly`, `custom_traits`, `relay`, `complex_relay`, and `delegate`.
 The complex relay suite is a small application whose events, context services, configuration,
 and trait choices can be traced end to end.
 
@@ -25,7 +25,7 @@ Use `nom::type_list<Types...>` for type lists; it is available from `nom.assembl
 including Metal headers.
 
 Unit suites and source/installed-package consumers import `nom.assembly`;
-[the test guide](docs/tests.md) explains how to run the teaching suites.
+[the test guide](docs/assembly/tests.md) explains how to run the teaching suites.
 
 ## Build
 

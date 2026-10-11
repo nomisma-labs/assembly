@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -194,6 +195,150 @@ namespace
     struct empty_traits : nom::assembly<empty_traits>
     {
     };
+
+    struct optional_notice
+    {
+        bool consume = false;
+    };
+
+    struct unobserved_request
+    {
+    };
+
+    struct unobserved_response
+    {
+    };
+
+    struct emit_unobserved
+    {
+    };
+
+    struct emit_move_only
+    {
+        std::unique_ptr<int>& value;
+    };
+
+    struct convertible_notice
+    {
+        operator unobserved_request() const
+        {
+            return {};
+        }
+
+        operator unobserved_response() const
+        {
+            return {};
+        }
+    };
+
+    template <typename Traits> struct first_observer
+    {
+        struct context_mixin
+        {
+            std::vector<std::string> trace;
+        };
+
+        void on_request(const optional_notice& event)
+        {
+            if (event.consume)
+            {
+                nom::ctx(this).trace.push_back("first:consume request");
+                return;
+            }
+            nom::ctx(this).trace.push_back("first:request");
+            nom::relay<Traits>::pass_request(this, event);
+            nom::ctx(this).trace.push_back("first:return");
+        }
+
+        void on_response(const optional_notice& event)
+        {
+            nom::ctx(this).trace.push_back("first:response");
+            nom::relay<Traits>::pass_response(this, event);
+        }
+
+        void on_response(emit_unobserved)
+        {
+            nom::ctx(this).trace.push_back("first:emit response");
+            nom::relay<Traits>::pass_response(this, unobserved_response{});
+        }
+
+        void on_response(emit_move_only event)
+        {
+            nom::ctx(this).trace.push_back("first:emit response");
+            nom::relay<Traits>::pass_response(this, std::move(event.value));
+        }
+    };
+
+    template <typename Traits> struct passive_node
+    {
+    };
+
+    template <typename Traits> struct last_observer
+    {
+        void on_request(const optional_notice& event)
+        {
+            nom::ctx(this).trace.push_back("last:request");
+            nom::relay<Traits>::pass_request(this, event);
+        }
+
+        void on_request(emit_unobserved)
+        {
+            nom::ctx(this).trace.push_back("last:emit request");
+            nom::relay<Traits>::pass_request(this, unobserved_request{});
+        }
+
+        void on_request(emit_move_only event)
+        {
+            nom::ctx(this).trace.push_back("last:emit request");
+            nom::relay<Traits>::pass_request(this, std::move(event.value));
+        }
+
+        void on_response(const optional_notice& event)
+        {
+            if (event.consume)
+            {
+                nom::ctx(this).trace.push_back("last:consume response");
+                return;
+            }
+            nom::ctx(this).trace.push_back("last:response");
+            nom::relay<Traits>::pass_response(this, event);
+        }
+    };
+
+    struct optional_assembly : nom::assembly<optional_assembly, first_observer, passive_node, last_observer>
+    {
+        struct custom_traits : nom::event_suppressors
+        {
+            using suppressed_requests = nom::type_list<optional_notice, unobserved_request, std::unique_ptr<int>>;
+            using suppressed_responses = nom::type_list<optional_notice, unobserved_response, std::unique_ptr<int>>;
+        };
+    };
+
+    // No application nodes are needed to suppress an optional event.
+    struct request_only_assembly : nom::assembly<request_only_assembly>
+    {
+        struct custom_traits : nom::event_suppressors
+        {
+            using suppressed_requests = nom::type_list<unobserved_request>;
+        };
+    };
+
+    struct response_only_assembly : nom::assembly<response_only_assembly>
+    {
+        struct custom_traits : nom::event_suppressors
+        {
+            using suppressed_responses = nom::type_list<unobserved_response>;
+        };
+    };
+
+    struct unrelated_custom_assembly : nom::assembly<unrelated_custom_assembly, passive_node>
+    {
+        struct custom_traits
+        {
+            using suppressed_requests = nom::type_list<unobserved_request>;
+            using suppressed_responses = nom::type_list<unobserved_response>;
+        };
+    };
 } // namespace
 
 TEST_CASE("Public relay constraints distinguish request and response routes", "[relay]")
@@ -328,6 +473,10 @@ TEST_CASE("Variadic requests preserve the identity and mutability of lvalue argu
 
 TEST_CASE("A move-only rvalue can cross a forwarding node and transfer ownership", "[relay]")
 {
+    using relay = nom::relay<transport_assembly>;
+    STATIC_REQUIRE_FALSE(std::is_copy_constructible_v<relay>);
+    STATIC_REQUIRE(std::is_move_constructible_v<relay>);
+
     nom::relay<transport_assembly> app;
     auto value = std::make_unique<int>(42);
     const auto* original = value.get();
@@ -362,4 +511,137 @@ TEST_CASE("Move-only responses preserve ownership transfer along the reverse rou
     REQUIRE(app.ctx().owned);
     CHECK(app.ctx().owned.get() == original);
     CHECK(*app.ctx().owned == 73);
+}
+
+TEST_CASE("Suppression is configured independently for each direction, including empty assemblies", "[relay]")
+{
+    using request_relay = nom::relay<request_only_assembly>;
+    using response_relay = nom::relay<response_only_assembly>;
+
+    STATIC_REQUIRE(accepts_request<request_relay, unobserved_request>);
+    STATIC_REQUIRE_FALSE(accepts_response<request_relay, unobserved_request>);
+    STATIC_REQUIRE(accepts_response<response_relay, unobserved_response>);
+    STATIC_REQUIRE_FALSE(accepts_request<response_relay, unobserved_response>);
+
+    request_relay requests;
+    response_relay responses;
+    requests.request(unobserved_request{});
+    responses.respond(unobserved_response{});
+
+    // Matching member names alone do not opt unrelated traits into suppression.
+    using unrelated_relay = nom::relay<unrelated_custom_assembly>;
+    STATIC_REQUIRE_FALSE(accepts_request<unrelated_relay, unobserved_request>);
+    STATIC_REQUIRE_FALSE(accepts_response<unrelated_relay, unobserved_response>);
+}
+
+TEST_CASE("Listed events can reach a suppressor directly or after the final application node", "[relay]")
+{
+    using relay = nom::relay<optional_assembly>;
+    STATIC_REQUIRE(accepts_request<relay, unobserved_request>);
+    STATIC_REQUIRE(accepts_response<relay, unobserved_response>);
+    STATIC_REQUIRE(forwards_request<relay, last_observer<optional_assembly>, unobserved_request>);
+    STATIC_REQUIRE(forwards_response<relay, first_observer<optional_assembly>, unobserved_response>);
+
+    relay app;
+    app.request(unobserved_request{});
+    app.respond(unobserved_response{});
+    CHECK(app.ctx().trace.empty());
+
+    app.request(emit_unobserved{});
+    app.respond(emit_unobserved{});
+    CHECK(app.ctx().trace == std::vector<std::string>{"last:emit request", "first:emit response"});
+}
+
+TEST_CASE("Application handlers precede suppressors and may forward all the way to either end", "[relay]")
+{
+    nom::relay<optional_assembly> app;
+    app.request(optional_notice{});
+    CHECK(app.ctx().trace == std::vector<std::string>{"first:request", "last:request", "first:return"});
+
+    app.ctx().trace.clear();
+    app.respond(optional_notice{});
+    CHECK(app.ctx().trace == std::vector<std::string>{"last:response", "first:response"});
+}
+
+TEST_CASE("Suppression does not make forwarding automatic", "[relay]")
+{
+    nom::relay<optional_assembly> app;
+    app.request(optional_notice{true});
+    CHECK(app.ctx().trace == std::vector<std::string>{"first:consume request"});
+
+    app.ctx().trace.clear();
+    app.respond(optional_notice{true});
+    CHECK(app.ctx().trace == std::vector<std::string>{"last:consume response"});
+}
+
+TEST_CASE("Suppressors accept one listed event, not conversions or arbitrary argument packs", "[relay]")
+{
+    using relay = nom::relay<optional_assembly>;
+    using first_node = first_observer<optional_assembly>;
+    using last_node = last_observer<optional_assembly>;
+
+    STATIC_REQUIRE_FALSE(accepts_request<relay, unobserved_response>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, unobserved_request>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, convertible_notice>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, convertible_notice>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, int>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, int>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay>);
+    STATIC_REQUIRE_FALSE(accepts_request<relay, unobserved_request, int>);
+    STATIC_REQUIRE_FALSE(accepts_response<relay, unobserved_response, int>);
+
+    STATIC_REQUIRE_FALSE(forwards_request<relay, last_node, unobserved_response>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, first_node, unobserved_request>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, last_node>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, first_node>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, last_node, unobserved_request, int>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, first_node, unobserved_response, int>);
+}
+
+TEST_CASE("Suppression never makes an invalid forwarding source valid", "[relay]")
+{
+    using relay = nom::relay<optional_assembly>;
+    using foreign_node = client<routing_assembly>;
+
+    STATIC_REQUIRE_FALSE(forwards_request<relay, foreign_node, unobserved_request>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, foreign_node, unobserved_response>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, const last_observer<optional_assembly>, unobserved_request>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, const first_observer<optional_assembly>, unobserved_response>);
+    STATIC_REQUIRE_FALSE(forwards_request<relay, int, unobserved_request>);
+    STATIC_REQUIRE_FALSE(forwards_response<relay, int, unobserved_response>);
+    STATIC_REQUIRE_FALSE(forwards_request<nom::relay<request_only_assembly>, foreign_node, unobserved_request>);
+    STATIC_REQUIRE_FALSE(forwards_response<nom::relay<response_only_assembly>, foreign_node, unobserved_response>);
+}
+
+TEST_CASE("Suppressing a move-only event accepts every cvref category without taking ownership", "[relay]")
+{
+    using relay = nom::relay<optional_assembly>;
+    STATIC_REQUIRE(accepts_request<relay, std::unique_ptr<int>&>);
+    STATIC_REQUIRE(accepts_request<relay, const std::unique_ptr<int>&>);
+    STATIC_REQUIRE(accepts_request<relay, std::unique_ptr<int>>);
+    STATIC_REQUIRE(accepts_request<relay, const std::unique_ptr<int>>);
+    STATIC_REQUIRE(accepts_response<relay, std::unique_ptr<int>&>);
+    STATIC_REQUIRE(accepts_response<relay, const std::unique_ptr<int>&>);
+    STATIC_REQUIRE(accepts_response<relay, std::unique_ptr<int>>);
+    STATIC_REQUIRE(accepts_response<relay, const std::unique_ptr<int>>);
+
+    relay app;
+    auto value = std::make_unique<int>(42);
+    const int* original = value.get();
+    app.request(value);
+    app.request(std::as_const(value));
+    app.request(std::move(value));
+    app.request(std::move(std::as_const(value)));
+    app.respond(value);
+    app.respond(std::as_const(value));
+    app.respond(std::move(value));
+    app.respond(std::move(std::as_const(value)));
+
+    CHECK(app.ctx().trace.empty());
+    app.request(emit_move_only{value});
+    app.respond(emit_move_only{value});
+    REQUIRE(value.get() == original);
+    CHECK(*value == 42);
+    CHECK(app.ctx().trace == std::vector<std::string>{"last:emit request", "first:emit response"});
 }

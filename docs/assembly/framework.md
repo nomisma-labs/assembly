@@ -16,15 +16,16 @@ The library provides these facilities:
 
 | Facility | Responsibility | Module source |
 |---|---|---|
-| `type_list<Types...>` | Declare compile-time type lists | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
-| `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
-| `apply_custom_traits_t<Traits, NodeTraits>` | Apply assembly custom traits or keep node defaults | [`custom_traits.cppm`](../core/assembly/custom_traits.cppm) |
-| `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
-| `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../core/assembly/delegate.cppm) |
+| `type_list<Types...>` | Declare compile-time type lists | [`assembly_impl.cppm`](../../core/assembly/assembly_impl.cppm) |
+| `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../../core/assembly/assembly_impl.cppm) |
+| `apply_custom_traits_t<Traits, NodeTraits>` | Apply assembly custom traits or keep node defaults | [`custom_traits.cppm`](../../core/assembly/custom_traits.cppm) |
+| `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../../core/assembly/relay.cppm) |
+| `event_suppressors` | Configure optional events consumed at relay boundaries | [`relay.cppm`](../../core/assembly/relay.cppm) |
+| `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../../core/assembly/delegate.cppm) |
 
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
 `nom::relay<Assembly>`. Import `nom.assembly`; its
-[primary interface](../core/assembly/assembly.cppm) re-exports the partitions above.
+[primary interface](../../core/assembly/assembly.cppm) re-exports the partitions above.
 The implementation uses Metal **v2.1.4** headers, pinned in `external/metal`, for
 compile-time type lists. The exported alias `nom::type_list<Types...>` lets applications
 declare these lists without including Metal headers. Applications needing Metal algorithms
@@ -42,8 +43,9 @@ for their own default traits, as described below.
 
 `Assembly::body` owns the node subobjects and exposes `get<I>()` in declared node order. A node may declare
 `context_mixin`; the assembly combines those mixins into `body::context`. A passive node can
-contribute only a context service, without handling any events. `relay<Assembly>` owns the body and
-exposes its context through `ctx()`.
+contribute only a context service, without handling any events. A relay owns an internal body
+that derives from `Assembly::body` and adds the relay's service nodes. It exposes the shared
+context through `ctx()` and names its assembly type through `relay<Assembly>::assembly`.
 
 Construction shares the same initialization argument pack as **const references** with every
 context mixin and node. A component accepts the complete pack if it has a compatible constructor;
@@ -159,6 +161,10 @@ Returning consumes the event. An observer must explicitly forward if later handl
 also see it. A catch-all handler participates in this same search and can intercept many event
 types, so its position matters.
 
+For optional application-wide events, [event suppression](event_suppression.md) supplies
+terminal request and response handlers through assembly custom traits. Application handlers
+are visited first; unlisted events still require a reachable handler.
+
 Each routing entry point calls its selected handler directly, without an intermediate dispatch
 function or its extra debug stack frame. Calls run synchronously on the caller's thread.
 Work after a forwarding call executes when the downstream call returns, just like nested
@@ -167,12 +173,14 @@ response later, but the relay supplies no queue, scheduler, locking or ownership
 events. A node that retains an event must arrange its lifetime.
 
 Matching uses the exact forwarded argument categories, including constness and lvalue/rvalue
-references. Multiple arguments and move-only events are supported. Normal C++ overload
-resolution and conversions still apply; matching is not restricted to identical type names.
+references. Multiple arguments and move-only events are supported. Application handlers use
+normal C++ overload resolution and conversions; their matching is not restricted to identical
+type names. Suppressors match a single event by its exact type without cv/ref qualifiers.
 Handler return values are discarded. The four routing entry points are constrained by named
 concepts: `handles_request`, `handles_response`, `handles_request_after` and
-`handles_response_after`. A missing reachable handler fails the corresponding constraint,
-so a dependent `requires` expression can test whether a call is supported. Forwarding also
+`handles_response_after`. With no reachable application handler or configured suppressor,
+the call fails the corresponding constraint, so a dependent `requires` expression can test
+whether a call is supported. Forwarding also
 requires an `assembly_node`: the source type must belong to the assembly before the relay
 searches the remaining nodes. These checks use the same forwarded argument categories as
 the actual call. They check the next handler, not the bodies of handlers farther along a route.
@@ -213,38 +221,10 @@ context-mixin types or clashing public service names can create ambiguous bases 
 Use distinct node or mixin types for distinct roles.
 
 `ctx(part)` requires a node or mixin belonging to the specified live assembly;
-`pass_request`/`pass_response` require one of its nodes. Separately constructed components do
-not satisfy that contract. Establish a stable owner address before installing callbacks that
+`pass_request`/`pass_response` require a node owned by the corresponding relay. A separately
+constructed `Assembly::body` lacks the relay's service nodes. Establish a stable owner address
+before installing callbacks that
 capture nodes; moving a wired assembly does not retarget existing pointers or references.
-
-## Migrating code from trading-platform
-
-The extraction preserves composition and routing while placing the API directly in `nom` and
-using snake_case names. The old `core` spellings are not compatibility aliases.
-
-| Previous API | Assembly repository API |
-|---|---|
-| `core::Assembly<Traits, Nodes...>` | `nom::assembly<Traits, Nodes...>` |
-| `core::Relay<Assembly>` | `nom::relay<Assembly>` |
-| `core::ctx(node)` | `nom::ctx(node)` |
-| `ContextMixin` | `context_mixin` |
-| Assembly `Traits`, `Nodes`, `Body`; body `Context` | `traits`, `nodes`, `body`; body `context` |
-| Relay `Assembly`, `Nodes`, `RNodes`, `Context` | `assembly_type`, `nodes`, `reverse_nodes`, `context` |
-| `onRequest`, `onResponse` | `on_request`, `on_response` |
-| `passRequest`, `passResponse` | `pass_request`, `pass_response` |
-| `core::DGate`, `core::DGateRef` | `nom::delegate`, `nom::delegate_ref` |
-| `core::EventsDGate<Events...>::Type` | `nom::events_delegate<Events...>::type`, or `nom::events_delegate_t<Events...>` |
-| Framework `#include` directives | `import nom.assembly;` |
-
-`request`, `respond`, `ctx`, `get<I>()` and `size` retain their names. Link consumers to the
-CMake target `nom::assembly` and import `nom.assembly`.
-
-Two behavior corrections accompany the extraction: relay handler detection now uses the same
-forwarding as invocation, and `delegate_ref` preserves reference results instead of copying them.
-The borrowed wrapper also supports const invocation and propagates the handler's `noexcept`
-contract. Missing routes report a failed routing constraint without indexing beyond the
-candidate list; forwarding from an unrelated source fails the `assembly_node` constraint.
-Const bodies now provide `get<I>()`.
 
 Continue with the [executable learning guide](tests.md), which applies this model to a complete
 small application and identifies its services, events, policies, configuration and emitters.
