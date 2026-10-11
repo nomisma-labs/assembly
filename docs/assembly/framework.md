@@ -12,16 +12,18 @@ interaction: the event signature and the node's position limit who can participa
 useful for services and state with application-wide scope, such as a clock, connection state or
 an order view. Its public interface is the union of the services contributed by the nodes.
 
-The library provides these facilities:
+The library has three main facilities:
 
 | Facility | Responsibility | Module source |
 |---|---|---|
-| `type_list<Types...>` | Declare compile-time type lists | [`assembly_impl.cppm`](../../core/assembly/assembly_impl.cppm) |
 | `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../../core/assembly/assembly_impl.cppm) |
-| `apply_custom_traits_t<Traits, NodeTraits>` | Apply assembly custom traits or keep node defaults | [`custom_traits.cppm`](../../core/assembly/custom_traits.cppm) |
 | `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../../core/assembly/relay.cppm) |
-| `event_suppressors` | Configure optional events consumed at relay boundaries | [`relay.cppm`](../../core/assembly/relay.cppm) |
-| `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../../core/assembly/delegate.cppm) |
+| `delegate` | Connect a producer to callable handlers | [`delegate.cppm`](../../core/assembly/delegate.cppm) |
+
+Supporting definitions include `type_list` for compile-time type lists,
+[`apply_custom_traits_t`](../../core/assembly/custom_traits.cppm) for applying custom traits,
+and `event_suppressors` for optional event suppression. `events_delegate_t` and `delegate_ref`
+provide additional delegate forms.
 
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
 `nom::relay<Assembly>`. Import `nom.assembly`; its
