@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 
 nom_lib(assembly
-    MODULES assembly.cppm assembly_impl.cppm override_traits.cppm relay.cppm delegate.cppm
+    MODULES assembly.cppm assembly_impl.cppm custom_traits.cppm relay.cppm delegate.cppm
     PUBLIC_DEPS nom::metal)
 
 if(nom_install)

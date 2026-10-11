@@ -17,7 +17,7 @@ The library provides these facilities:
 | Facility | Responsibility | Module source |
 |---|---|---|
 | `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../core/assembly/assembly_impl.cppm) |
-| `use_override_if_defined_t<Traits, NodeTraits>` | Select assembly overrides or a node's default traits | [`override_traits.cppm`](../core/assembly/override_traits.cppm) |
+| `apply_custom_traits_t<Traits, NodeTraits>` | Apply assembly custom traits or keep node defaults | [`custom_traits.cppm`](../core/assembly/custom_traits.cppm) |
 | `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../core/assembly/relay.cppm) |
 | `delegate`, `events_delegate_t`, `delegate_ref` | Connect a producer to callable handlers | [`delegate.cppm`](../core/assembly/delegate.cppm) |
 
@@ -33,7 +33,7 @@ or trading libraries. `complex_relay` is a teaching scenario built with these fa
 Each node is a class template taking the final assembly as its `Traits` parameter. The application
 declares an `Assembly` type derived from `assembly<Assembly, Nodes...>`, with types or constants
 that nodes consume as policies.
-Nodes can read these members directly or use `use_override_if_defined_t` to select overrides
+Nodes can read these members directly or use `apply_custom_traits_t` to apply custom traits
 for their own default traits, as described below.
 
 `Assembly::body` owns the node subobjects and exposes `get<I>()` in declared node order. A node may declare
@@ -89,13 +89,13 @@ member on an unfinished object.
 During construction, a mixin may use earlier, already constructed services; node constructors
 can use the completed context.
 
-## Selecting node traits
+## Applying custom traits
 
 A node can define its defaults independently of an assembly. The alias
-`nom::use_override_if_defined_t<Traits, NodeTraits>` selects `Traits::override_traits` when
+`nom::apply_custom_traits_t<Traits, NodeTraits>` selects `Traits::custom_traits` when
 that type inherits from `NodeTraits` (or is the same class type). Otherwise it selects
-`NodeTraits`, including when no `override_traits` type exists. Matching member names alone
-do not opt a type into an override.
+`NodeTraits`, including when no `custom_traits` type exists. Matching member names alone
+do not make a type applicable.
 
 ```cpp
 struct risk_traits
@@ -106,29 +106,29 @@ struct risk_traits
 template<typename Traits>
 struct risk_check
 {
-    using risk_policy = nom::use_override_if_defined_t<Traits, risk_traits>;
-    // Handlers read risk_policy::lot_size.
+    using risk_traits = nom::apply_custom_traits_t<Traits, ::risk_traits>;
+    // Handlers read risk_traits::lot_size.
 };
 
 struct round_lot_assembly : nom::assembly<round_lot_assembly, risk_check>
 {
-    struct override_traits : risk_traits
+    struct custom_traits : risk_traits
     {
         static constexpr int lot_size = 10;
     };
 };
 ```
 
-An assembly without the nested override uses `risk_traits::lot_size`, which is `1`. Here the
-node selects `round_lot_assembly::override_traits`, whose value is `10`. Unchanged constants
+An assembly without custom traits uses `risk_traits::lot_size`, which is `1`. Here the
+node selects `round_lot_assembly::custom_traits`, whose value is `10`. Unchanged constants
 and type aliases are inherited from the defaults. The nested type can also be an alias to a
-separately defined override type.
+separately defined custom traits type.
 
-One override type may inherit several nodes' default trait types. Each node selects it only
+One custom traits type may inherit several nodes' default trait types. Each node selects it only
 for a trait family it inherits; unrelated families keep their own defaults. Selection returns
-the whole override type, without merging or filtering its members. Use public bases and resolve
-any conflicting member names in the override; selection uses `std::is_base_of_v` and does not
-remove ordinary C++ access restrictions or ambiguities. Define the override before instantiating
+the whole custom traits type, without merging or filtering its members. Use public bases and resolve
+any conflicting member names; selection uses `std::is_base_of_v` and does not
+remove ordinary C++ access restrictions or ambiguities. Define custom traits before instantiating
 nodes or context mixins that select it.
 
 Nodes still receive the assembly itself as `Traits`, so relay routing and context lookup keep

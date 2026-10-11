@@ -137,13 +137,13 @@ namespace
     template <typename Traits> struct risk_check
     {
         using context_mixin = account_state;
-        using risk_policy = nom::use_override_if_defined_t<Traits, risk_traits>;
+        using risk_traits = nom::apply_custom_traits_t<Traits, ::risk_traits>;
 
         void on_request(const order_request& event)
         {
             auto& shared = nom::ctx(this);
             shared.trace.push_back("risk:check");
-            if (event.quantity <= 0 || event.quantity % risk_policy::lot_size != 0)
+            if (event.quantity <= 0 || event.quantity % risk_traits::lot_size != 0)
             {
                 reject(event.id, "invalid lot");
                 return;
@@ -196,18 +196,18 @@ namespace
     {
     };
 
-    // The risk node uses its defaults unless the assembly supplies a derived override.
+    // The risk node uses its defaults unless the assembly supplies derived custom traits.
     struct round_lot_assembly
         : nom::assembly<round_lot_assembly, order_client, market_data, risk_check, paper_execution>
     {
-        struct override_traits : risk_traits
+        struct custom_traits : risk_traits
         {
             static constexpr int lot_size = 10;
         };
     };
 
-    static_assert(std::is_same_v<risk_check<order_assembly>::risk_policy, risk_traits>);
-    static_assert(std::is_same_v<risk_check<round_lot_assembly>::risk_policy, round_lot_assembly::override_traits>);
+    static_assert(std::is_same_v<risk_check<order_assembly>::risk_traits, ::risk_traits>);
+    static_assert(std::is_same_v<risk_check<round_lot_assembly>::risk_traits, round_lot_assembly::custom_traits>);
     static_assert(!std::is_default_constructible_v<nom::relay<order_assembly>>);
     static_assert(!std::is_constructible_v<nom::relay<order_assembly>, int>);
     static_assert(std::is_constructible_v<nom::relay<order_assembly>, const app_config&>);

@@ -33,23 +33,23 @@ namespace sample
 
     template <typename Traits> struct sensor
     {
-        using sensor_policy = nom::use_override_if_defined_t<Traits, sensor_traits>;
+        using sensor_traits = nom::apply_custom_traits_t<Traits, ::sample::sensor_traits>;
 
         void on_request(int value)
         {
-            nom::relay<Traits>::pass_response(this, reading{value * sensor_policy::scale});
+            nom::relay<Traits>::pass_response(this, reading{value * sensor_traits::scale});
         }
     };
 
     struct sensor_assembly : nom::assembly<sensor_assembly, results, sensor>
     {
-        struct override_traits : sensor_traits
+        struct custom_traits : sensor_traits
         {
             static constexpr int scale = 2;
         };
     };
 
-    static_assert(std::is_same_v<sensor<sensor_assembly>::sensor_policy, sensor_assembly::override_traits>);
+    static_assert(std::is_same_v<sensor<sensor_assembly>::sensor_traits, sensor_assembly::custom_traits>);
 } // namespace sample
 
 int main()

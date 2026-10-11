@@ -25,10 +25,10 @@ does. However, if you want to dig deeper, you can ask the following five questio
    For every non-terminal node, list the events handled through `on_request(...)` and
    `on_response(...)`.
 
-3. **Which assembly trait overrides are active, and which components consume them?**
+3. **Which custom traits are active, and which components consume them?**
 
-   List the values in `Assembly::override_traits`, explain which nodes select those overrides,
-   and describe the behavior each override changes.
+   List the values in `Assembly::custom_traits`, explain which nodes use them,
+   and describe the behavior each trait changes.
 
 4. **Which configuration sections are used by each node?**
 

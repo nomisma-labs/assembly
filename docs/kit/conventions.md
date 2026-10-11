@@ -25,7 +25,7 @@ parameters**, so compile-time parameters stand out. Macros are UPPER_CASE, and n
 | Template template parameter | `PascalCase` | `template <template <typename> class Node>` |
 | Concept | `snake_case`, no `is_`/`has_` | `request_handler`, `handles_request` |
 | Type trait | `is_…` / `has_…` | `has_on_request` |
-| Trait shortcuts | `_v` only for `::value`, `_t` only for `::type` | `has_on_request_v`, `use_override_if_defined_t` |
+| Trait shortcuts | `_v` only for `::value`, `_t` only for `::type` | `has_on_request_v`, `apply_custom_traits_t` |
 | CRTP parameter | `Derived` | `template <typename Derived>` |
 | Internal namespace | `detail` (not `impl`) | `nom::detail` |
 | Macro | `UPPER_CASE` | `DEFINE_CONFIG` |
@@ -40,7 +40,7 @@ parameters**, so compile-time parameters stand out. Macros are UPPER_CASE, and n
 
 | Item | Rule | Example |
 |---|---|---|
-| Repo, directory and file names | `snake_case` | `cmake_template`, `override_traits.cppm` |
+| Repo, directory and file names | `snake_case` | `cmake_template`, `custom_traits.cppm` |
 | Extensions | `.cppm` module interface or partition, `.cpp` implementation unit or ordinary source, `.h` macro or dependency header, `_test.cxx` test | `relay_test.cxx` |
 | Library sources | `core/<repo>/…` | `core/assembly/relay.cppm` |
 | Imports | Nomisma library API through its primary module | `import nom.assembly;` |

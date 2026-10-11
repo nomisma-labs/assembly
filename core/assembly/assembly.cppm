@@ -4,6 +4,6 @@
 export module nom.assembly;
 
 export import :assembly_impl;
-export import :override_traits;
+export import :custom_traits;
 export import :relay;
 export import :delegate;

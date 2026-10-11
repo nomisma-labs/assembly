@@ -6,7 +6,7 @@ Read them in this order, running a suite after reading its node and assembly def
 | Suite and source | What to look for |
 |---|---|
 | [`assembly_test.cxx`](../tests/unit/assembly/assembly_test.cxx) | An assembly definition versus its runtime body; initialization arguments shared with compatible constructors; rejection of argument packs no component accepts; copying node and context state; context available before nodes; services contributed by several mixins; explicit context lookup from nested mixins, including construction; const access |
-| [`override_traits_test.cxx`](../tests/unit/override_traits/override_traits_test.cxx) | Default traits, inheritance-based overrides, multiple trait families, inherited members, and selection inside nodes and context mixins |
+| [`custom_traits_test.cxx`](../tests/unit/custom_traits/custom_traits_test.cxx) | Default and custom traits, multiple trait families, inherited members, and application inside nodes and context mixins |
 | [`relay_test.cxx`](../tests/unit/relay/relay_test.cxx) | Requests moving forwards and responses backwards; unrelated nodes skipped; explicit consumption and transformation; call nesting; argument identity, ownership and value categories; compile-time checks for supported routes and valid forwarding sources |
 | [`delegate_test.cxx`](../tests/unit/delegate/delegate_test.cxx) | Concrete overloads versus a named callback interface; owned and borrowed handlers; runtime rebinding; reference results and move-only arguments |
 | [`complex_relay_test.cxx`](../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, an assembly trait and an external callback interface |
@@ -23,7 +23,7 @@ ctest --preset dev -R '^assembly_complex_relay$'
 ```
 
 Each executable is at `build/dev/tests/unit/<suite>/assembly_<suite>`, where `<suite>` is
-`assembly`, `override_traits`, `relay`, `delegate` or `complex_relay`. Catch2's `--list-tests` shows each lesson;
+`assembly`, `custom_traits`, `relay`, `delegate` or `complex_relay`. Catch2's `--list-tests` shows each lesson;
 `-s` prints successful assertions. For example:
 
 ```bash
@@ -104,15 +104,15 @@ A rejection starts *before* the risk node on the reverse route, so it never call
 
 ### 3. Which assembly traits change behavior, and who reads them?
 
-`risk_traits::lot_size` defaults to `1`. The `risk_check` node selects its `risk_policy` with
-`nom::use_override_if_defined_t<Traits, risk_traits>`. `order_assembly` declares no override,
-so it uses the defaults. `round_lot_assembly::override_traits` inherits `risk_traits` and changes
-`lot_size` to `10`; the same node selects that override.
+`::risk_traits::lot_size` defaults to `1`. The `risk_check` node defines its local `risk_traits` with
+`nom::apply_custom_traits_t<Traits, ::risk_traits>`. `order_assembly` declares no custom traits,
+so it uses the defaults. `round_lot_assembly::custom_traits` inherits `risk_traits` and changes
+`lot_size` to `10`; the same node applies those traits.
 
 Both assemblies compose the same node templates. Only `risk_check` reads this value, requiring
 a positive quantity divisible by the lot size. With the second assembly, quantity `3` is rejected
 while `10` is accepted when cash permits. This is a compile-time trait, independent of runtime
-configuration. The [trait-selection guide](framework.md#selecting-node-traits) explains how
+configuration. The [custom-traits guide](framework.md#applying-custom-traits) explains how
 unrelated nodes keep their defaults.
 
 ### 4. Which configuration values does each component read?

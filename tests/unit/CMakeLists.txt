@@ -3,7 +3,7 @@
 
 # One subdirectory per Catch2 unit test suite (docs/kit/howto.md#a-unit-test-suite).
 add_subdirectory(assembly)
-add_subdirectory(override_traits)
+add_subdirectory(custom_traits)
 add_subdirectory(relay)
 add_subdirectory(complex_relay)
 add_subdirectory(delegate)
