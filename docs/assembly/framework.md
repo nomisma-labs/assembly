@@ -22,7 +22,7 @@ The library has three main facilities:
 
 Supporting definitions include `type_list` for compile-time type lists,
 [`apply_custom_traits_t`](../../core/assembly/custom_traits.cppm) for applying custom traits,
-and `event_suppressors` for optional event suppression. `events_delegate_t` and `delegate_ref`
+and `event_suppressors` for events without a final consumer. `events_delegate_t` and `delegate_ref`
 provide additional delegate forms.
 
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
@@ -163,9 +163,9 @@ Returning consumes the event. An observer must explicitly forward if later handl
 also see it. A catch-all handler participates in this same search and can intercept many event
 types, so its position matters.
 
-For optional application-wide events, [event suppression](event_suppression.md) supplies
-terminal request and response handlers through assembly custom traits. Application handlers
-are visited first; unlisted events still require a reachable handler.
+For application-wide events without a final consumer, [event suppression](event_suppression.md)
+supplies terminal request and response handlers through assembly custom traits. Application
+handlers are visited first; unlisted events still require a reachable handler.
 
 Each routing entry point calls its selected handler directly, without an intermediate dispatch
 function or its extra debug stack frame. Calls run synchronously on the caller's thread.

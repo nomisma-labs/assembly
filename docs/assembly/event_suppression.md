@@ -1,8 +1,9 @@
 # Event suppression
 
-Some application-wide events are optional: nodes may handle them, forward them, or ignore
-them. Configure these events through assembly traits instead of adding utility terminator
-nodes. The relay supplies a separate suppressor at the end of each route:
+Some application-wide events have no final consumer: nodes along a route may react to them
+and forward them, but none ends their route. Configure these events through assembly traits
+instead of adding utility terminator nodes. The relay supplies a separate suppressor at the
+end of each route:
 
 ```text
 request:  first node -> ... -> last node  -> request suppressor
