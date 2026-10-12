@@ -33,6 +33,8 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 - Synchronized the shared tools with cmake_template v0.8.1: `./bootstrap.sh` enables git hooks
   that check each commit's staged files (whitespace, formatting, SPDX headers) and reject
   `Co-Authored-By` trailers, and sandbox experiments are git-ignored.
+- Synchronized the shared CMake kit with cmake_template v0.8.2: `nom_lib()` and `nom_app()`
+  accept `COMPILE_OPTIONS`.
 
 ## [0.1.0] - 2026-10-03
 

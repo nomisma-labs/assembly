@@ -45,6 +45,18 @@ This creates `<project>_capture`, producing `bin/capture`. An adjacent `config/`
 collected and installed with the application. Add these folders through their parent's
 `add_subdirectory()` calls, following the [recipes](../../docs/kit/howto.md).
 
+Both helpers accept `COMPILE_OPTIONS`, a list of compiler flags:
+
+```cmake
+nom_app(capture_perf SOURCES main.cpp DEPS nom::prices
+    COMPILE_OPTIONS -DNOM_CONFIG_APP=capture -Wextra)
+```
+
+Use `-DNAME=value` for macros. An unquoted name such as `capture` is a token;
+stringify it in C++ when a string is needed. Options are private to apps and compiled
+libraries; an interface library passes them to consumers. Pass each option as a separate
+CMake argument; normal CMake quoting is needed only for arguments containing spaces.
+
 Other common helpers are `nom_c2test()` for Catch2 tests, `nom_library_usage_tests()` for C++
 source/install consumption checks, and `nom_python_module()` for optional Python extensions.
 Dependency services such as `nom_find_catch2()` are called before targets that need them. Full signatures and options are in the [build guide](../../docs/kit/build.md#the-cmake-kit).

@@ -2,15 +2,16 @@
 # SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 
 # nom_lib(<name> [STATIC | SHARED] [SOURCES <files>] [HEADERS <files>] [MODULES <files>] [BASE_DIR <dir>]
-#                 [PUBLIC_DEPS <targets>] [PRIVATE_DEPS <targets>])
+#                 [PUBLIC_DEPS <targets>] [PRIVATE_DEPS <targets>] [COMPILE_OPTIONS <options>])
 #
 # Creates <name> and its alias nom::<name>. Nomisma library APIs are declared in MODULES.
 # Without SOURCES or MODULES it is an INTERFACE target for macros or dependency adapters.
 # STATIC/SHARED selects compiled linkage explicitly; otherwise
 # BUILD_SHARED_LIBS supplies the default. HEADERS and MODULES become file sets rooted at BASE_DIR (default:
 # <project>/core), so they install under the same path they are included by: <name>/file.h.
+# COMPILE_OPTIONS are PRIVATE for compiled libraries and INTERFACE for header-only targets.
 function(nom_lib name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "STATIC;SHARED" "BASE_DIR" "SOURCES;HEADERS;MODULES;PUBLIC_DEPS;PRIVATE_DEPS")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "STATIC;SHARED" "BASE_DIR" "SOURCES;HEADERS;MODULES;PUBLIC_DEPS;PRIVATE_DEPS;COMPILE_OPTIONS")
     if(arg_STATIC AND arg_SHARED)
         message(FATAL_ERROR "nom_lib(${name}): STATIC and SHARED are mutually exclusive")
     endif()
@@ -51,6 +52,9 @@ function(nom_lib name)
         target_link_libraries(${name} ${scope} ${arg_PUBLIC_DEPS})
     endif()
     if(scope STREQUAL "PUBLIC")
+        if(arg_COMPILE_OPTIONS)
+            target_compile_options(${name} PRIVATE ${arg_COMPILE_OPTIONS})
+        endif()
         if(arg_PRIVATE_DEPS)
             target_link_libraries(${name} PRIVATE ${arg_PRIVATE_DEPS})
         endif()
@@ -60,18 +64,21 @@ function(nom_lib name)
         if(target_type STREQUAL "SHARED_LIBRARY" OR target_type STREQUAL "MODULE_LIBRARY")
             nom_set_install_library_path(${name} "${CMAKE_INSTALL_FULL_LIBDIR}")
         endif()
+    elseif(arg_COMPILE_OPTIONS)
+        target_compile_options(${name} INTERFACE ${arg_COMPILE_OPTIONS})
     endif()
 endfunction()
 
-# nom_app(<name> SOURCES <files> [DEPS <targets>] [BUILD_FOR <names>])
+# nom_app(<name> SOURCES <files> [DEPS <targets>] [BUILD_FOR <names>] [COMPILE_OPTIONS <options>])
 #
 # Target <project>_<name>, because target names are global in a superbuild. The binary is
 # bin/<name> in the project's build directory. If the app directory contains config/,
 # collect it at <top-level build>/config/<app directory> on every build. When
 # installation is enabled, install selected apps and their collected config. BUILD_FOR defaults
 # to any; NOM_BUILD_PRESET=complete selects every app. Other apps remain explicitly buildable.
+# COMPILE_OPTIONS apply only to this executable.
 function(nom_app name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;BUILD_FOR")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;BUILD_FOR;COMPILE_OPTIONS")
     if(NOT arg_BUILD_FOR)
         set(arg_BUILD_FOR any)
     endif()
@@ -86,6 +93,9 @@ function(nom_app name)
     endif()
     target_link_libraries(${target} PRIVATE ${arg_DEPS})
     target_compile_features(${target} PRIVATE cxx_std_23)
+    if(arg_COMPILE_OPTIONS)
+        target_compile_options(${target} PRIVATE ${arg_COMPILE_OPTIONS})
+    endif()
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME ${name}
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
