@@ -6,6 +6,8 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-13
+
 ### Added
 
 - `nom::apply_custom_traits_t<Traits, NodeTraits>` selects an assembly's `custom_traits`
@@ -13,6 +15,13 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 - `nom::ctx<Assembly>(part)` supports nested context mixins without additional owner aliases.
   Explicit and deduced lookup preserve constness, reject unrelated source types and access
   mixin context directly, including already constructed services during construction.
+- `nom::event_suppressors` lets an assembly's custom traits list request and response events
+  without a final consumer, instead of adding utility terminator nodes. The relay consumes them
+  in a suppressor at the end of each route, after application handlers; unlisted events still
+  require a reachable handler.
+- `nom::type_list<Types...>` declares type lists without including Metal headers.
+- A `custom_traits` teaching suite, and guides to reading an application through five questions,
+  to event suppression and to the exception policy for event processing.
 
 ### Fixed
 
@@ -24,6 +33,8 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ### Changed
 
+- `relay<Assembly>::assembly_type` is renamed `relay<Assembly>::assembly`; the relay's `nodes`
+  and `reverse_nodes` end with its request and response suppressors.
 - Body and relay construction require at least one node or context mixin to accept the full
   nonempty initialization argument pack as const references. Other components may still default;
   arguments that every component would ignore are rejected by a constructor constraint.
