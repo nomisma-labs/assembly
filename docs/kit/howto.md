@@ -26,13 +26,12 @@ uses `find_package(cmake_template)` and links `nom::example`.
        HEADERS macros.h         # only when the library needs public macros
        PUBLIC_DEPS <targets>    # dependencies needed by the public interface, if any
        PRIVATE_DEPS <targets>)  # dependencies used only by the implementation, if any
-   if(nom_install)
-       nom_install_package(TARGETS <repo> DEPENDENCIES <packages>)
-   endif()
+   nom_install_package(TARGETS <repo> DEPENDENCIES <packages>)
    ```
 
    `DEPENDENCIES` lists the packages needed by exported CMake targets, including private
-   dependencies that a static library carries into its link interface.
+   dependencies that a static library carries into its link interface. The helper skips
+   installation rules when `nom_install` is OFF.
 3. Add `add_subdirectory(<repo>)` to `core/CMakeLists.txt`.
 4. Add its unit tests and library usage integration tests (below).
 
@@ -103,6 +102,7 @@ More rules and dependency boundaries: [build.md](build.md#modules).
    ```cmake
    nom_app(<app> SOURCES main.cpp DEPS nom::<repo>)
    ```
+   When `nom_build_apps` is OFF, the helper creates no target or config collection rules.
    The target is `<repo>_<app>`; the binary is `build/<preset>/bin/<app>`. By default it joins
    every preset (`BUILD_FOR any`). Restrict its normal build and installation with:
    ```cmake
@@ -136,10 +136,14 @@ More rules and dependency boundaries: [build.md](build.md#modules).
 2. Give the folder a `CMakeLists.txt` with one executable:
    ```cmake
    nom_c2test(tests SOURCES file_test.cxx DEPS nom::<repo>)
-   set_tests_properties(${PROJECT_NAME}_tests PROPERTIES LABELS unit)
+   if(nom_build_tests)
+       set_tests_properties(${PROJECT_NAME}_tests PROPERTIES LABELS unit)
+   endif()
    ```
    `nom_c2test(<suite> …)` builds `<repo>_<suite>` and registers it with CTest; each folder needs
-   its own suite name (`tests`, `relay_tests`, …).
+   its own suite name (`tests`, `relay_tests`, …). With `nom_build_tests` OFF, it creates neither
+   the executable nor the test. Keep the property assignment guarded because it requires an
+   existing test; a surrounding directory guard can cover both calls instead.
 3. For a top-level suite, add `add_subdirectory(<suite>)` to `tests/unit/CMakeLists.txt`. For an
    inline suite, add this to the code directory's `CMakeLists.txt`, after defining the library:
    ```cmake
@@ -148,14 +152,17 @@ More rules and dependency boundaries: [build.md](build.md#modules).
    endif()
    ```
    Use unique suite names across both layouts. The root `CMakeLists.txt` enables testing and
-   finds Catch2 before processing code directories, so both layouts can call `nom_c2test()`.
+   finds Catch2 when tests are enabled before processing code directories, so both layouts can
+   call `nom_c2test()`. Keep guards around that dependency discovery and direct `add_test()` calls.
 
 ## Library usage integration tests
 
 These verify that a separate project can find, compile against, link and use the library. They
 build and run a small program twice: against the installed package through `find_package`, and
 against the source tree through `FetchContent`. This checks the public API and CMake integration
-that other repos rely on.
+that other repos rely on. `nom_library_usage_tests()` registers no tests when `nom_build_tests`
+is OFF. With `nom_install` OFF it keeps the source-consumption test and omits the installation
+fixture and installed-package test.
 
 1. Add `tests/integration/library_usage/CMakeLists.txt`:
    ```cmake
@@ -209,6 +216,8 @@ and packaging tools. Packaging does not choose or generate the Python API.
        DEPS nom::<repo>
        RUNTIME_LIBRARIES nom::<repo>)
    ```
+   The helper skips target creation when `nom_build_python` is OFF. Its `nom_python`
+   installation rules remain available with `nom_install` OFF, as wheel builds require.
    `DEPS` uses existing source-built or imported CMake targets. List all required shared targets
    in `RUNTIME_LIBRARIES`, including transitive dependencies; the helper installs them beside
    the extension with package-relative loading paths. Omit that argument for dependencies that
@@ -294,7 +303,12 @@ environment. Change shared mechanisms in the template, then synchronize them int
   subproject (nlohmann_json in cmake_template), or only its include directory when it doesn't.
   Use a module wrapper when it gives a useful, supported API boundary; otherwise include
   the dependency's headers where needed. Our library APIs belong in named modules.
-- **System libraries** (Boost, OpenSSL, …): `find_package(<Package> REQUIRED)`.
+- **Boost:** the top-level `CMakeLists.txt` calls `nom_find_boost()`. Link `Boost::program_options`,
+  `Boost::filesystem` or `Boost::iostreams` where they are used, include their headers before
+  imports or in a module unit's global module fragment, and add `Boost` to
+  `nom_install_package(DEPENDENCIES …)` when exported targets link them. cmake_template's
+  `apps/boost_example/` uses all three.
+- **Other system libraries** (OpenSSL, …): `find_package(<Package> REQUIRED)`.
 
 ## An experiment
 

@@ -52,6 +52,9 @@ a Python package, a dependency, an experiment.
   with `--no-verify`: fix what they report, stage the fixes and commit again. Commit messages carry
   no `Co-Authored-By` trailers ([build.md](build.md#git-hooks)).
 - Add targets with the kit (`nom_lib`, `nom_app`, `nom_python_module`, `nom_c2test`), not raw CMake.
+- Public helpers respect the calling project's `nom_*` options. Keep guards around optional
+  dependency discovery, direct `add_test()` calls, and commands modifying skipped targets or tests;
+  a helper call alone needs no repeated guard ([build.md](build.md#the-cmake-kit)).
 - Python packaging mechanisms belong in the template; derived repos declare package metadata,
   bindings, dependencies and runtime libraries through the shared facilities.
 - Template-owned paths (`bootstrap.sh`, `cmake/kit/`, `tools/kit/`, `docs/kit/`, `.clang-format`,

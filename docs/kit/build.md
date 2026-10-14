@@ -49,6 +49,7 @@ to clear both the main build and the nested integration-test builds that cache t
 | Ninja | 1.11 or newer | generator (Makefiles can't build modules) |
 | Python | 3.10 or newer; 3.14.4 locally | repository scripts use the standard library; optional wheel builds use the separate environment below |
 | Catch2 | 3 (system package, or a pinned download) | tests |
+| Boost | 1.90 or newer; Ubuntu packages `libboost-program-options-dev`, `libboost-filesystem-dev`, `libboost-iostreams-dev` (1.90.0) | program options, filesystem and iostreams in every repo |
 
 Only the versioned Clang names exist on Ubuntu (`clang++-19`, not `clang++`), so presets and
 scripts name them explicitly. The installed GCC package is a development snapshot rather than
@@ -85,7 +86,8 @@ The requirements file pins the packaging tools, including scikit-build-core. The
 environment and `--no-isolation` use those versions without creating another build environment.
 The repository's `pyproject.toml` selects the backend, derives the package version from CMake
 `project()` and enables `<PROJECT>_BUILD_PYTHON`. CMake's `nom_python` install component supplies
-the native package files. Python runtime dependencies remain separate package metadata.
+the native package files, independently of `<PROJECT>_INSTALL`; wheel builds disable the native
+C++ installation. Python runtime dependencies remain separate package metadata.
 
 Packaging is tested on Ubuntu 26.04 with GCC 16 and CPython 3.14.4. A wheel is built for that
 environment, with no claim of compatibility across Linux distributions or Python versions.
@@ -152,7 +154,7 @@ Presets set the shared cache variable `NOM_BUILD_PRESET`. A custom preset inheri
 selection unless it overrides that variable, so `dev-local` above still selects `dev` apps.
 Without a preset it defaults to `dev`; set `-DNOM_BUILD_PRESET=release` or `complete` when needed.
 This selects apps independently of `CMAKE_BUILD_TYPE`; `<PROJECT>_BUILD_APPS` still controls
-whether the apps directory participates. For every app with Clang, use
+whether app targets are created. For every app with Clang, use
 `cmake --preset clang -DNOM_BUILD_PRESET=complete`, then build that preset.
 
 ## compile_commands.json
@@ -182,22 +184,37 @@ The entry point provides:
 | `nom_python_module(<target> MODULE_NAME <name> PACKAGE <package> SOURCES … [DEPS …] [RUNTIME_LIBRARIES …])` | Linux Python extension and explicitly bundled shared libraries, installed through the `nom_python` component. |
 | `nom_c2test(<suite> SOURCES … [DEPS …])` | Catch2 executable `<project>_<suite>`, registered with CTest. Needs `nom_find_catch2()`. |
 | `nom_library_usage_tests(<dir> [OPTIONS …])` | Integration tests: build and run a separate project using this library as an installed package and from source (see Tests). |
-| `nom_install_package(TARGETS … [DEPENDENCIES …])` | Install rules and `<project>-config.cmake`, so consumers can `find_package(<project>)` and link `nom::<target>`. |
+| `nom_install_package(TARGETS … [DEPENDENCIES …])` | Install rules and `<project>-config.cmake`, so consumers can `find_package(<project>)` and link `nom::<target>`. The config finds `DEPENDENCIES` first, with the version and components a kit service found them with. |
 | `nom_require_submodule(<path>)` | Fails early, with the fix, when a submodule wasn't checked out. |
 | `nom_find_catch2()` | The system Catch2 3, otherwise a pinned download; called at the project root when tests are enabled, before code directories. |
+| `nom_find_boost()` | The system Boost 1.90 or newer with `Boost::program_options`, `Boost::filesystem` and `Boost::iostreams`; called at the project root, before code directories. |
 
 `nom_c2test` is specific to Catch2. Future test frameworks can have their own helpers
 without changing `nom_lib` or `nom_app`.
 
-The options, where `<PROJECT>` is the upper-case project name. Set them with `-D` on the command
-line; the CMake files read the variables:
+`nom_project_options()` constructs cache option names from the upper-case project name;
+for example, `project(prices)` produces `PRICES_BUILD_TESTS`. Set these options with `-D` on
+the command line. Their `nom_*` aliases belong to the calling directory and are inherited by
+its subdirectories. A dependency calling `nom_project_options()` establishes its own aliases,
+so the host's enabled tests or apps do not enable them in the dependency.
 
 | Option | Variable | Default | Controls |
 |---|---|---|---|
-| `<PROJECT>_BUILD_TESTS` | `nom_build_tests` | ON when top level | `tests/` |
-| `<PROJECT>_BUILD_APPS` | `nom_build_apps` | ON when top level | `apps/`, including the sandbox |
+| `<PROJECT>_BUILD_TESTS` | `nom_build_tests` | ON when top level, OFF as a dependency | test targets and registrations |
+| `<PROJECT>_BUILD_APPS` | `nom_build_apps` | ON when top level, OFF as a dependency | apps, including the sandbox and config collection |
 | `<PROJECT>_BUILD_PYTHON` | `nom_build_python` | OFF | optional Python bindings and wheel installation |
-| `<PROJECT>_INSTALL` | `nom_install` | ON | install rules and the package config |
+| `<PROJECT>_INSTALL` | `nom_install` | ON | native install rules and the package config |
+
+Public helpers return without creating targets or rules when their corresponding alias is OFF:
+`nom_app()` checks `nom_build_apps`, `nom_python_module()` checks `nom_build_python`,
+`nom_c2test()` and `nom_library_usage_tests()` check `nom_build_tests`, and
+`nom_install_package()` checks `nom_install`. App installation also requires `nom_install`;
+Python's `nom_python` component remains independent of it.
+
+Keep directory or caller guards for optional dependency discovery and for commands that modify
+targets or tests skipped by a helper, such as `set_tests_properties()`. Direct `add_test()` calls
+also need a `nom_build_tests` guard. A guard is unnecessary around a helper that handles the
+complete operation.
 
 In a superbuild each repo brings its own copy of the kit; the first one loaded wins, and a
 different version is reported as a warning.
@@ -218,7 +235,12 @@ Named modules are part of every Nomisma library build.
     installed package brings nlohmann with it.
   - Header-only libraries whose CMake project doesn't suit a subproject are used through
     their include directory only; their CMake project is never run.
-- **System libraries** (Boost, OpenSSL, later): `find_package` only.
+- **Boost:** `nom_find_boost()`, from system packages: `Boost::program_options`,
+  `Boost::filesystem` and `Boost::iostreams`. Link the ones a target uses, and list `Boost` in
+  `nom_install_package(DEPENDENCIES …)` when exported targets link them; the package config then
+  finds the same components. To use another Boost library, add it to `nom_find_boost()` in
+  cmake_template, so every repo and package finds the same set.
+- **Other system libraries** (OpenSSL, later): `find_package` only.
 - **Catch2:** `nom_find_catch2()`.
 - **Co-developing two repos:** set `FETCHCONTENT_SOURCE_DIR_<NAME>` (upper-case name) to a local
   checkout, in `CMakeUserPresets.json` as above. No submodule bump is needed until you commit.
@@ -291,7 +313,9 @@ cross-toolchain binary compatibility is not implied.
   `build/<preset>/tests/integration/library_usage/install`, then builds and runs the test project
   against that package with `find_package` (`<project>_library_usage_package`), and from source
   through `FetchContent` (`<project>_library_usage_source`). Both modes compile the same importing
-  consumer, including rebuilding installed module interfaces in package mode.
+  consumer, including rebuilding installed module interfaces in package mode. With `nom_install`
+  OFF, only the source-consumption test is registered. With `nom_build_tests` OFF, neither mode
+  is registered.
 
 ```bash
 ctest --preset dev                   # all tests

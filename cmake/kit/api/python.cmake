@@ -9,7 +9,11 @@
 # backend's wheel.packages declaration. This initial fixture supports native Linux builds.
 # RUNTIME_LIBRARIES is the complete non-system shared-library closure, including imported
 # targets. It is not an automatic system-library collector or a manylinux repair step.
+# Does nothing when nom_build_python is OFF; nom_python installation is independent of nom_install.
 function(nom_python_module target)
+    if(NOT nom_build_python)
+        return()
+    endif()
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "MODULE_NAME;PACKAGE" "SOURCES;DEPS;RUNTIME_LIBRARIES")
     if(arg_UNPARSED_ARGUMENTS OR arg_KEYWORDS_MISSING_VALUES OR NOT arg_SOURCES
        OR NOT arg_MODULE_NAME MATCHES "^[A-Za-z_][A-Za-z_0-9]*$"

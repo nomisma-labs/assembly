@@ -6,6 +6,12 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+### Changed
+
+- Synchronized the shared build infrastructure with cmake_template v0.9.0.
+  Public helpers enforce project-local build and installation options internally;
+  source-consumption tests remain available when installation is disabled.
+
 ## [0.2.0] - 2026-10-13
 
 ### Added

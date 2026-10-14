@@ -41,9 +41,9 @@ git push
 `tools/init_project.py <name>` turns the copy into an empty repo. It removes the template's example
 code instead of renaming it:
 
-- deletes the example code (`core/example/`, `apps/hello/`, the example unit tests, library usage
-  and Python package test projects, root `pyproject.toml`, `python/`, the nlohmann submodule),
-  the lab (the sandbox experiments, `docs/lab/`) and the
+- deletes the example code (`core/example/`, `apps/hello/`, `apps/boost_example/`, the example
+  unit tests, library usage and Python package test projects, root `pyproject.toml`, `python/`,
+  the nlohmann submodule), the lab (the sandbox experiments, `docs/lab/`) and the
   template-only files (`docker/`, the `ci-image` and `ci-template` workflows, the template sync
   test, and itself);
 - retains optional Python packaging helpers and pinned build-tool requirements; generated repos

@@ -76,8 +76,11 @@ endfunction()
 # collect it at <top-level build>/config/<app directory> on every build. When
 # installation is enabled, install selected apps and their collected config. BUILD_FOR defaults
 # to any; NOM_BUILD_PRESET=complete selects every app. Other apps remain explicitly buildable.
-# COMPILE_OPTIONS apply only to this executable.
+# COMPILE_OPTIONS apply only to this executable. Does nothing when nom_build_apps is OFF.
 function(nom_app name)
+    if(NOT nom_build_apps)
+        return()
+    endif()
     cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;BUILD_FOR;COMPILE_OPTIONS")
     if(NOT arg_BUILD_FOR)
         set(arg_BUILD_FOR any)
