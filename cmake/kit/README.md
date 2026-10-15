@@ -15,7 +15,7 @@ Include only `nom_kit.cmake`; it loads the files below in the required order.
 |---|---|
 | [api/](api/) | Helpers used in repository `CMakeLists.txt` files: project options, targets, tests, C++ installation and optional Python extensions. |
 | [deps/](deps/) | Dependency services: submodule checks, Catch2 and Boost discovery. |
-| [internal/](internal/) | Implementation details such as compiler warnings, runtime paths and Python library checks. |
+| [internal/](internal/) | Implementation details such as compiler warnings, runtime paths, Python library checks and the build tree's test selection. |
 | [templates/](templates/) | Templates used to generate installed CMake package metadata. Dependency-specific templates stay with their service in `deps/`. |
 | [presets.json](presets.json) | The shared configure, build, test and workflow presets. Each repo's `CMakePresets.json` includes it and adds its own. |
 
@@ -55,7 +55,8 @@ stringify it in C++ when a string is needed. Options are private to apps and com
 libraries; an interface library passes them to consumers. Pass each option as a separate
 CMake argument; normal CMake quoting is needed only for arguments containing spaces.
 
-Other common helpers are `nom_c2test()` for Catch2 tests, `nom_library_usage_tests()` for C++
+Other common helpers are `nom_c2test()` for Catch2 tests, labeled `unit` unless `LABELS` says
+otherwise, `nom_library_usage_tests()` for C++
 source/install consumption checks, and `nom_python_module()` for optional Python extensions.
 Dependency services such as `nom_find_catch2()` and `nom_find_boost()` are called before targets that need them. Full signatures and options are in the [build guide](../../docs/kit/build.md#the-cmake-kit).
 
@@ -69,6 +70,10 @@ installation disabled.
 
 Keep guards for optional dependency discovery, direct `add_test()` calls, and commands that
 modify a target or test a disabled helper would skip. A helper call alone needs no repeated guard.
+
+The cache variable `NOM_SKIP_TEST_LABELS` lists test labels that ctest leaves out in the build
+tree; the `dev` preset sets it to `integration;kit`. The kit writes the build tree's
+`CTestCustom.cmake` for it ([Tests](../../docs/kit/build.md#tests)).
 
 The kit is **template-owned**: update it in `cmake_template`, then use `tools/kit/sync_template.py`
 in derived repos. A repo's own CMake files go in `cmake/<repo>/`; shared build mechanisms belong

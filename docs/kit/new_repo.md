@@ -42,10 +42,10 @@ git push
 code instead of renaming it:
 
 - deletes the example code (`core/example/`, `apps/hello/`, `apps/boost_example/`, the example
-  unit tests, library usage and Python package test projects, root `pyproject.toml`, `python/`,
-  the nlohmann submodule), the lab (the sandbox experiments, `docs/lab/`) and the
-  template-only files (`docker/`, the `ci-image` and `ci-template` workflows, the template sync
-  test, and itself);
+  unit tests and library usage test project, root `pyproject.toml`, `python/`, the nlohmann
+  submodule), the lab (the sandbox experiments, `docs/lab/`) and the template-only files
+  (`docker/`, the `ci-image` and `ci-template` workflows, the kit's own tests in `tests/kit/`,
+  `tools/toolchain_updates.py`, and itself);
 - retains optional Python packaging helpers and pinned build-tool requirements; generated repos
   start without a Python package and add one using [howto.md](howto.md#a-python-package);
 - deletes the lines and blocks the template marks as template-only;

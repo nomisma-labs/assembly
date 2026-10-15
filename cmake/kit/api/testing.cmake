@@ -1,15 +1,21 @@
 # SPDX-FileCopyrightText: 2026 Alexey Tkachenko
 # SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 
-# nom_c2test(<suite> SOURCES <files> [DEPS <targets>])
+# nom_c2test(<suite> SOURCES <files> [DEPS <targets>] [LABELS <labels>]
+#            [PROPERTIES <name> <value>...])
 #
-# One Catch2 executable per test folder: target <project>_<suite>, registered with CTest.
-# Call nom_find_catch2() first when enabled. Does nothing when nom_build_tests is OFF.
+# One Catch2 executable per test folder: target <project>_<suite>, registered with CTest and
+# labeled unit; LABELS replaces that label list. PROPERTIES sets other test properties, such as
+# TIMEOUT or RESOURCE_LOCK, so callers never spell the test name. Call nom_find_catch2() first
+# when enabled. Does nothing when nom_build_tests is OFF.
 function(nom_c2test suite)
     if(NOT nom_build_tests)
         return()
     endif()
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;DEPS;LABELS;PROPERTIES")
+    if(NOT arg_LABELS)
+        set(arg_LABELS unit)
+    endif()
     set(target ${PROJECT_NAME}_${suite})
     add_executable(${target} ${arg_SOURCES})
     target_link_libraries(${target} PRIVATE ${arg_DEPS} Catch2::Catch2WithMain)
@@ -17,6 +23,7 @@ function(nom_c2test suite)
     set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
     nom_set_warnings(${target})
     add_test(NAME ${target} COMMAND ${target})
+    set_tests_properties(${target} PROPERTIES LABELS "${arg_LABELS}" ${arg_PROPERTIES})
 endfunction()
 
 # nom_library_usage_tests(<dir> [OPTIONS <-Dname=value>...])

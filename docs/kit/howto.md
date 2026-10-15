@@ -136,14 +136,12 @@ More rules and dependency boundaries: [build.md](build.md#modules).
 2. Give the folder a `CMakeLists.txt` with one executable:
    ```cmake
    nom_c2test(tests SOURCES file_test.cxx DEPS nom::<repo>)
-   if(nom_build_tests)
-       set_tests_properties(${PROJECT_NAME}_tests PROPERTIES LABELS unit)
-   endif()
    ```
-   `nom_c2test(<suite> …)` builds `<repo>_<suite>` and registers it with CTest; each folder needs
-   its own suite name (`tests`, `relay_tests`, …). With `nom_build_tests` OFF, it creates neither
-   the executable nor the test. Keep the property assignment guarded because it requires an
-   existing test; a surrounding directory guard can cover both calls instead.
+   `nom_c2test(<suite> …)` builds `<repo>_<suite>`, registers it with CTest and labels it `unit`;
+   each folder needs its own suite name (`tests`, `relay_tests`, …). `LABELS` replaces the label,
+   such as `LABELS integration` for a slow suite that `dev` builds leave out, and `PROPERTIES`
+   sets other test properties, such as `PROPERTIES TIMEOUT 60 RESOURCE_LOCK database`. With
+   `nom_build_tests` OFF, it creates neither the executable nor the test.
 3. For a top-level suite, add `add_subdirectory(<suite>)` to `tests/unit/CMakeLists.txt`. For an
    inline suite, add this to the code directory's `CMakeLists.txt`, after defining the library:
    ```cmake
@@ -191,7 +189,8 @@ fixture and installed-package test.
    both consumption modes; package consumers rebuild module interfaces for their own compiler.
 3. Add `nom_library_usage_tests(library_usage)` to `tests/integration/CMakeLists.txt`. The
    helper labels its tests `integration`. Keep other integration checks here too, with the same
-   label. Run either group with `ctest --preset dev -L unit` or `ctest --preset dev -L integration`.
+   label. `ctest --preset dev` runs the unit tests without them; `ctest --preset complete` runs
+   both, and `ctest --preset complete -L integration` runs these alone.
 
 ## A Python package
 

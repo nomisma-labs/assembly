@@ -4,7 +4,7 @@
 # Nomisma CMake kit. Template-owned: change it in cmake_template, then pull the change into
 # derived repos with tools/kit/sync_template.py. Reference: docs/kit/build.md.
 
-set(_nom_kit_version 0.9.0)
+set(_nom_kit_version 0.10.0)
 
 # The same language flags everywhere: compiled module interfaces are flag-sensitive.
 if(NOT DEFINED CMAKE_CXX_STANDARD)
@@ -42,3 +42,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/deps/boost.cmake)
 # Implementation utilities shared by the public helpers.
 include(${CMAKE_CURRENT_LIST_DIR}/internal/target_settings.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/internal/python_runtime.cmake)
+
+# The build tree's test selection: NOM_SKIP_TEST_LABELS.
+include(${CMAKE_CURRENT_LIST_DIR}/internal/test_selection.cmake)

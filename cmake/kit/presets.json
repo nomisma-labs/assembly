@@ -11,15 +11,20 @@
     },
     {
       "name": "dev",
-      "displayName": "GCC 16, Debug",
+      "displayName": "GCC 16, Debug, fast tests (no integration or kit tests)",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_CXX_COMPILER": "g++-16", "CMAKE_BUILD_TYPE": "Debug", "NOM_BUILD_PRESET": "dev" }
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++-16",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "NOM_BUILD_PRESET": "dev",
+        "NOM_SKIP_TEST_LABELS": "integration;kit"
+      }
     },
     {
       "name": "complete",
-      "displayName": "GCC 16, Debug, every app including experiments",
+      "displayName": "GCC 16, Debug, every app including experiments, every test",
       "inherits": "dev",
-      "cacheVariables": { "NOM_BUILD_PRESET": "complete" }
+      "cacheVariables": { "NOM_BUILD_PRESET": "complete", "NOM_SKIP_TEST_LABELS": "" }
     },
     {
       "name": "release",
@@ -66,7 +71,8 @@
     {
       "name": "base",
       "hidden": true,
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "environment": { "CTEST_PARALLEL_LEVEL": "" }
     },
     { "name": "dev", "inherits": "base", "configurePreset": "dev" },
     { "name": "complete", "inherits": "base", "configurePreset": "complete" },

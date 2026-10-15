@@ -13,6 +13,8 @@ repo's `AGENTS.md` imports it and adds the repo's own rules.
 - Configure once with `cmake --preset dev`; then, in `build/dev`, `ninja` builds and
   `ctest --output-on-failure` tests. Binaries land in `build/<preset>/bin/`.
 - `cmake --workflow --preset dev` does all three. Other presets: `complete`, `clang`, `asan`, `release`, `ci`.
+  A `dev` build leaves out the tests labeled `integration` and `kit`; the others run every test, in
+  parallel through their presets, so `cmake --workflow --preset complete` checks a change fully.
   `complete` is Debug with every app; `nom_app(... BUILD_FOR dev ci)` limits normal build/install participation.
   Details: [build.md](build.md).
 - Native Python packaging is opt-in: use the pinned environment and wheel build commands in
