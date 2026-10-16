@@ -54,7 +54,7 @@ to clear both the main build and the nested integration-test builds that cache t
 | CMake | 3.30 or newer; 4.4.4 from Kitware's apt repository, locally and in CI | build |
 | Ninja | 1.11 or newer | generator (Makefiles can't build modules) |
 | Python | 3.10 or newer; 3.14.4 locally | repository scripts use the standard library; optional wheel builds use the separate environment below |
-| Catch2 | 3 (system package, or a pinned download) | tests |
+| Catch2 | 3.16.1, built from source into `/usr/local`, locally and in CI | tests |
 | Boost | 1.90 or newer; Ubuntu packages `libboost-program-options-dev`, `libboost-filesystem-dev`, `libboost-iostreams-dev` (1.90.0) | program options, filesystem and iostreams in every repo |
 
 Only the versioned Clang names exist on Ubuntu (`clang++-19`, not `clang++`), so presets and
@@ -83,6 +83,23 @@ The CI image pins the CMake package (`CMAKE_VERSION` in `docker/ci/Dockerfile`);
 toolchain report notes when that pin and the installed CMake differ. A plain `apt upgrade` moves a
 machine to Kitware's newest CMake; `sudo apt-mark hold cmake cmake-data` keeps the version until
 you choose to move.
+
+Ubuntu packages an older Catch2, so build the release the kit requires once per machine, with the
+C++ standard the repos use. Without it, every build tree downloads and builds its own copy, which
+takes a few seconds and needs network when the tree is configured:
+
+```bash
+src=$(mktemp -d)
+git clone --depth 1 --branch v3.16.1 https://github.com/catchorg/Catch2.git "$src"
+cmake -S "$src" -B "$src/build" -G Ninja -DCMAKE_CXX_COMPILER=g++-16 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_STANDARD=23 -DBUILD_TESTING=OFF -DCATCH_INSTALL_DOCS=OFF
+cmake --build "$src/build"
+sudo cmake --install "$src/build"   # into /usr/local
+rm -rf "$src"
+```
+
+The CI image builds the same release (`CATCH2_VERSION` in `docker/ci/Dockerfile`).
+cmake_template's toolchain report shows which Catch2 builds use and notes a mismatch with the image.
 Where `clang-format-19` can't come from packages, `pipx install clang-format==19.1.7` installs the
 same formatter from PyPI as `clang-format`; set `CLANG_FORMAT=clang-format` for the checks and hooks.
 
@@ -227,7 +244,7 @@ The entry point provides:
 | `nom_library_usage_tests(<dir> [OPTIONS …])` | Integration tests: build and run a separate project using this library as an installed package and from source (see Tests). |
 | `nom_install_package(TARGETS … [DEPENDENCIES …])` | Install rules and `<project>-config.cmake`, so consumers can `find_package(<project>)` and link `nom::<target>`. The config finds `DEPENDENCIES` first, with the version and components a kit service found them with. |
 | `nom_require_submodule(<path>)` | Fails early, with the fix, when a submodule wasn't checked out. |
-| `nom_find_catch2()` | The system Catch2 3, otherwise a pinned download; called at the project root when tests are enabled, before code directories. |
+| `nom_find_catch2()` | An installed Catch2 3.16.1 or newer within major version 3, otherwise that release downloaded and built in the build tree; called at the project root when tests are enabled, before code directories. |
 | `nom_find_boost()` | The system Boost 1.90 or newer with `Boost::program_options`, `Boost::filesystem` and `Boost::iostreams`; called at the project root, before code directories. |
 
 `nom_c2test` is specific to Catch2. Future test frameworks can have their own helpers
@@ -348,7 +365,9 @@ cross-toolchain binary compatibility is not implied.
 ## Tests
 
 - `tests/unit/<suite>/` or inline `<code dir>/tests/<suite>/`: Catch2 unit tests, created with
-  `nom_c2test()` and labeled `unit`. The root enables testing and finds Catch2 before processing
+  `nom_c2test()` and labeled `unit`. Catch2 runs a suite's test cases in random order, so they
+  must not depend on each other; `--order decl` runs them in declaration order while you look for
+  such a dependency. The root enables testing and finds Catch2 before processing
   `core/` and `apps/`, when `nom_build_tests` is enabled. Suites import the library's primary
   module; there is one path through the public API.
 - `tests/integration/`: checks involving project boundaries or installation, labeled `integration`.
