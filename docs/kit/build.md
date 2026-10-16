@@ -51,7 +51,7 @@ to clear both the main build and the nested integration-test builds that cache t
 | Ubuntu | 26.04 LTS | development and CI operating system |
 | GCC | 16 (`g++-16`); installed compiler reports 16.0.1, experimental snapshot 20260322, package `16-20260322-1ubuntu1` | the main compiler |
 | Clang tools | 19 (`clang++-19`, `clangd-19`, `clang-tidy-19`, `clang-scan-deps-19`, `clang-format-19`) | second compiler, sanitizers, IDE, checks |
-| CMake | 3.30 or newer; 4.4.3 locally, Ubuntu package 4.2.3 for CI | build |
+| CMake | 3.30 or newer; 4.4.4 from Kitware's apt repository, locally and in CI | build |
 | Ninja | 1.11 or newer | generator (Makefiles can't build modules) |
 | Python | 3.10 or newer; 3.14.4 locally | repository scripts use the standard library; optional wheel builds use the separate environment below |
 | Catch2 | 3 (system package, or a pinned download) | tests |
@@ -61,6 +61,28 @@ Only the versioned Clang names exist on Ubuntu (`clang++-19`, not `clang++`), so
 scripts name them explicitly. The installed GCC package is a development snapshot rather than
 a final GCC 16 release. The CI image installs the same tools from Ubuntu packages; package
 revisions without explicit pins are resolved when the image is built.
+
+Ubuntu packages an older CMake, so CMake comes from [Kitware's apt repository](https://apt.kitware.com).
+To add it to a machine, install its key, then the repository; the `kitware-archive-keyring`
+package keeps the key current from then on:
+
+```bash
+curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor \
+  | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg > /dev/null
+sudo tee /etc/apt/sources.list.d/kitware.sources > /dev/null <<'SOURCES'
+Types: deb
+URIs: https://apt.kitware.com/ubuntu/
+Suites: resolute
+Components: main
+Signed-By: /usr/share/keyrings/kitware-archive-keyring.gpg
+SOURCES
+sudo apt update && sudo apt install cmake cmake-data kitware-archive-keyring
+```
+
+The CI image pins the CMake package (`CMAKE_VERSION` in `docker/ci/Dockerfile`); cmake_template's
+toolchain report notes when that pin and the installed CMake differ. A plain `apt upgrade` moves a
+machine to Kitware's newest CMake; `sudo apt-mark hold cmake cmake-data` keeps the version until
+you choose to move.
 Where `clang-format-19` can't come from packages, `pipx install clang-format==19.1.7` installs the
 same formatter from PyPI as `clang-format`; set `CLANG_FORMAT=clang-format` for the checks and hooks.
 
