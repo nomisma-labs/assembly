@@ -11,6 +11,7 @@ tools go in `tools/`, outside the kit.
 | `checks/format.sh` | C++ formatting against `.clang-format`; `--fix` reformats, `--staged` checks the staged files |
 | `checks/naming.sh` | naming rules from `.clang-tidy`, over a `clang` build of every app |
 | `checks/version.py` | prints the version in `project()`, or checks a release tag against it |
+| `checks/dependency_updates.py` | reports git submodules with a newer upstream release; bootstrap shows it as a note |
 | `hooks/pre-commit` | git hook: whitespace, formatting and SPDX headers of the staged files |
 | `hooks/commit-msg` | git hook: rejects `Co-Authored-By` trailers |
 | `sync_template.py` | brings the template-owned files up to a `cmake_template` release |

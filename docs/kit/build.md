@@ -14,8 +14,9 @@ A `dev` build runs the fast tests; the other presets run every test ([Tests](#te
 Python compatibility/imports, headers and formatting are always checked; naming is included when
 `clang` is selected. A failed check returns a nonzero exit code. Invalid arguments
 are rejected before cleanup. Bootstrap also enables the [git hooks](#git-hooks) for the clone.
-In cmake_template, a last step runs `tools/toolchain_updates.py`, which reports compilers and
-dependency releases newer than the repo uses; other repos don't have the script.
+Bootstrap also reports git submodules recorded at an older release than their upstream's newest
+([Dependencies](#dependencies)). In cmake_template, a last step runs `tools/toolchain_updates.py`,
+which reports compilers, Catch2 and CMake newer than the repo uses; other repos don't have it.
 
 Each step reports `PASS`, `FAIL`, `SKIP` or `NOTE`, then a summary and next steps; independent
 checks continue after a failure, and a note needs no fix to pass. Only the current run's logs are
@@ -262,6 +263,10 @@ Named modules are part of every Nomisma library build.
 - **Catch2:** `nom_find_catch2()`.
 - **Co-developing two repos:** set `FETCHCONTENT_SOURCE_DIR_<NAME>` (upper-case name) to a local
   checkout, in `CMakeUserPresets.json` as above. No submodule bump is needed until you commit.
+- **Newer releases:** bootstrap runs `python3 tools/kit/checks/dependency_updates.py`, which asks
+  each submodule's remote for its release tags (`vX.Y.Z` or `X.Y.Z`) and records a `NOTE` naming
+  the submodules with a newer one. A remote it can't reach, for example without a network, or a
+  recorded commit that isn't a release, is reported unchecked; it never fails the run.
 - **Moving a pin:**
   ```bash
   git -C external/nlohmann_json fetch --depth 1 origin tag v3.12.1
@@ -409,6 +414,7 @@ To release `x.y.z`:
 | Formatting | `tools/kit/checks/format.sh` (`--fix` to reformat, `--staged` for the staged files) |
 | Naming | `tools/kit/checks/naming.sh` (builds `clang` with `NOM_BUILD_PRESET=complete` to cover every app) |
 | Release tag | `python3 tools/kit/checks/version.py <tag>` |
+| Dependency updates | `python3 tools/kit/checks/dependency_updates.py` (a report; bootstrap only) |
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the `ci` workflow preset and the first four
 checks on pushes to `master`, pull requests, manual runs, and `v*` tags. The version check runs

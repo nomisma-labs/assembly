@@ -68,8 +68,9 @@ Tests run in parallel. A dev build leaves out the tests labeled integration and
 kit (NOM_SKIP_TEST_LABELS); the other presets run every test.
 Python compatibility/imports, SPDX headers and formatting are checked on every run.
 Naming is included when clang is selected.
-Where tools/toolchain_updates.py exists (cmake_template), a last step reports newer
-compilers and dependency releases than the repo uses.
+Git submodules with a newer upstream release are reported as a note (network needed).
+Where tools/toolchain_updates.py exists (cmake_template), a last step also reports
+newer compilers, Catch2 and CMake.
 The git hooks in tools/kit/hooks are enabled for this clone (core.hooksPath), unless
 core.hooksPath already names other hooks.
 Each step reports PASS, FAIL, SKIP or NOTE; failures return exit code 1, notes don't.
@@ -172,14 +173,15 @@ run_step() {
     fi
 }
 
-# A report that doesn't fail validation: exit 0 passes and exit 3 records a NOTE, both with the
-# report's last line; any other exit fails.
+# A report that doesn't fail validation: exit 0 passes, exit 3 records a NOTE and exit 4, nothing
+# checked, a SKIP, each with the report's last line; any other exit fails.
 run_report() {
     local label=$1 status=0
     log_step "$@" || status=$?
     case "$status" in
         0) record PASS "$label" "$(tail -n 1 "$step_log")" ;;
         3) record NOTE "$label" "$(tail -n 1 "$step_log"); $step_log" ;;
+        4) record SKIP "$label" "$(tail -n 1 "$step_log")" ;;
         *) record FAIL "$label" "exit $status; $step_log"
            tail -n 20 "$step_log" ;;
     esac
@@ -349,6 +351,12 @@ if [[ $clang_selected == true ]]; then
     else
         record SKIP 'Naming' 'requires a successful Clang build and clang-tidy tools'
     fi
+fi
+# Submodules with newer releases (docs/kit/build.md#dependencies); a note never fails the run.
+if [[ $python_ready == true ]]; then
+    run_report 'Dependency updates' python3 tools/kit/checks/dependency_updates.py
+else
+    record SKIP 'Dependency updates' 'Python environment check did not pass'
 fi
 # cmake_template moves the toolchain first; its own script reports what is newer than the repo
 # uses (docs/kit/build.md#toolchain). Other repos don't have the script.
