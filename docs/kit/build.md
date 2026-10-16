@@ -50,14 +50,14 @@ to clear both the main build and the nested integration-test builds that cache t
 |---|---|---|
 | Ubuntu | 26.04 LTS | development and CI operating system |
 | GCC | 16 (`g++-16`); installed compiler reports 16.0.1, experimental snapshot 20260322, package `16-20260322-1ubuntu1` | the main compiler |
-| Clang tools | 19 (`clang++-19`, `clangd-19`, `clang-tidy-19`, `clang-scan-deps-19`, `clang-format-19`) | second compiler, sanitizers, IDE, checks |
+| Clang tools | 22 (`clang++-22`, `clangd-22`, `clang-tidy-22`, `clang-scan-deps-22`, `clang-format-22`); Ubuntu packages `clang-22`, `clang-tools-22`, `clang-tidy-22`, `clang-format-22`, `clangd-22` | second compiler, sanitizers, IDE, checks |
 | CMake | 3.30 or newer; 4.4.4 from Kitware's apt repository, locally and in CI | build |
 | Ninja | 1.11 or newer | generator (Makefiles can't build modules) |
 | Python | 3.10 or newer; 3.14.4 locally | repository scripts use the standard library; optional wheel builds use the separate environment below |
 | Catch2 | 3.16.1, built from source into `/usr/local`, locally and in CI | tests |
 | Boost | 1.90 or newer; Ubuntu packages `libboost-program-options-dev`, `libboost-filesystem-dev`, `libboost-iostreams-dev` (1.90.0) | program options, filesystem and iostreams in every repo |
 
-Only the versioned Clang names exist on Ubuntu (`clang++-19`, not `clang++`), so presets and
+The Clang packages install only versioned names (`clang++-22`, not `clang++`), so presets and
 scripts name them explicitly. The installed GCC package is a development snapshot rather than
 a final GCC 16 release. The CI image installs the same tools from Ubuntu packages; package
 revisions without explicit pins are resolved when the image is built.
@@ -100,7 +100,7 @@ rm -rf "$src"
 
 The CI image builds the same release (`CATCH2_VERSION` in `docker/ci/Dockerfile`).
 cmake_template's toolchain report shows which Catch2 builds use and notes a mismatch with the image.
-Where `clang-format-19` can't come from packages, `pipx install clang-format==19.1.7` installs the
+Where `clang-format-22` can't come from packages, `pipx install clang-format==22.1.2` installs the
 same formatter from PyPI as `clang-format`; set `CLANG_FORMAT=clang-format` for the checks and hooks.
 
 ## Python environment
@@ -151,8 +151,8 @@ presets of its own under other names.
 | `dev` | GCC 16, Debug | fast: all but `integration` and `kit` | daily work |
 | `complete` | GCC 16, Debug | all | every app, including experiments, regardless of its `BUILD_FOR` list |
 | `release` | GCC 16, Release | all | benchmarks and production builds |
-| `clang` | Clang 19, Debug | all | second compiler; its database feeds clangd and clang-tidy |
-| `asan` | Clang 19, Debug, AddressSanitizer + UBSan | all | memory errors and undefined behaviour in the code tests run |
+| `clang` | Clang 22, Debug | all | second compiler; its database feeds clangd and clang-tidy |
+| `asan` | Clang 22, Debug, AddressSanitizer + UBSan | all | memory errors and undefined behaviour in the code tests run |
 | `ci` | GCC 16, RelWithDebInfo, warnings as errors | all | the GitHub CI build |
 
 `./bootstrap.sh` runs every preset but `release`, which it runs only when named. GitHub CI builds
@@ -220,7 +220,7 @@ whether app targets are created. For every app with Clang, use
 Every preset writes this compilation database (the exact compiler command for each file) into
 its build directory. Clang tools can't read GCC's module flags, so clangd and clang-tidy use the
 `clang` preset's database: `.clangd` points at `build/clang`, so configure and build that preset
-once. In VS Code, use the clangd extension with `"clangd.path": "/usr/bin/clangd-19"` and
+once. In VS Code, use the clangd extension with `"clangd.path": "/usr/bin/clangd-22"` and
 `"clangd.arguments": ["--experimental-modules-support"]`.
 
 ## The CMake kit

@@ -34,13 +34,13 @@
     },
     {
       "name": "clang",
-      "displayName": "Clang 19, Debug (compilation database for clangd and clang-tidy)",
+      "displayName": "Clang 22, Debug (compilation database for clangd and clang-tidy)",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++-19", "CMAKE_BUILD_TYPE": "Debug", "NOM_BUILD_PRESET": "clang" }
+      "cacheVariables": { "CMAKE_CXX_COMPILER": "clang++-22", "CMAKE_BUILD_TYPE": "Debug", "NOM_BUILD_PRESET": "clang" }
     },
     {
       "name": "asan",
-      "displayName": "Clang 19, Debug, AddressSanitizer + UBSan",
+      "displayName": "Clang 22, Debug, AddressSanitizer + UBSan",
       "inherits": "clang",
       "cacheVariables": {
         "NOM_BUILD_PRESET": "asan",

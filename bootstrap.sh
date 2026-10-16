@@ -204,8 +204,8 @@ check_python_environment() {
     for preset in "${presets[@]}"; do
         if [[ $preset == clang ]]; then
             # This runner may use a different interpreter through its shebang.
-            "${RUN_CLANG_TIDY:-run-clang-tidy-19}" --help > /dev/null || return
-            printf 'Clang-tidy runner starts successfully: %s\n' "${RUN_CLANG_TIDY:-run-clang-tidy-19}"
+            "${RUN_CLANG_TIDY:-run-clang-tidy-22}" --help > /dev/null || return
+            printf 'Clang-tidy runner starts successfully: %s\n' "${RUN_CLANG_TIDY:-run-clang-tidy-22}"
         fi
     done
 }
@@ -270,10 +270,10 @@ mkdir -p build/bootstrap || exit 1
 log_dir=$(mktemp -d "$PWD/build/bootstrap/run.XXXXXX") || exit 1
 printf 'Validating %s\nLogs: %s\n' "$PWD" "$log_dir"
 printf 'Presets: %s\n' "${presets[*]}"
-required_tools=(git cmake ctest python3 "${CLANG_FORMAT:-clang-format-19}")
+required_tools=(git cmake ctest python3 "${CLANG_FORMAT:-clang-format-22}")
 for preset in "${presets[@]}"; do
     if [[ $preset == clang ]]; then
-        required_tools+=(clang-tidy-19 "${RUN_CLANG_TIDY:-run-clang-tidy-19}")
+        required_tools+=(clang-tidy-22 "${RUN_CLANG_TIDY:-run-clang-tidy-22}")
     fi
 done
 run_step 'Required tools' have_tools "${required_tools[@]}"
@@ -340,13 +340,13 @@ if [[ $python_ready == true ]]; then
 else
     record SKIP 'SPDX headers' 'Python environment check did not pass'
 fi
-if have_tools git "${CLANG_FORMAT:-clang-format-19}"; then
+if have_tools git "${CLANG_FORMAT:-clang-format-22}"; then
     run_step 'Formatting' bash tools/kit/checks/format.sh
 else
     record SKIP 'Formatting' 'required tools failed'
 fi
 if [[ $clang_selected == true ]]; then
-    if [[ $clang_ready == true ]] && have_tools clang-tidy-19 "${RUN_CLANG_TIDY:-run-clang-tidy-19}"; then
+    if [[ $clang_ready == true ]] && have_tools clang-tidy-22 "${RUN_CLANG_TIDY:-run-clang-tidy-22}"; then
         run_step 'Naming' bash tools/kit/checks/naming.sh
     else
         record SKIP 'Naming' 'requires a successful Clang build and clang-tidy tools'

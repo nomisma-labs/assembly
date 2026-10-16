@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
-clang_format=${CLANG_FORMAT:-clang-format-19}
+clang_format=${CLANG_FORMAT:-clang-format-22}
 patterns=('*.h' '*.hpp' '*.ipp' '*.cpp' '*.cxx' '*.cppm')
 
 if [[ "${1:-}" == "--staged" ]]; then
@@ -26,7 +26,7 @@ if [[ "${1:-}" == "--staged" ]]; then
         exit 0
     fi
     if ! command -v "$clang_format" > /dev/null; then
-        echo "$clang_format not found: install clang-format 19 (docs/kit/build.md#toolchain) or set CLANG_FORMAT" >&2
+        echo "$clang_format not found: install clang-format 22 (docs/kit/build.md#toolchain) or set CLANG_FORMAT" >&2
         exit 1
     fi
 
