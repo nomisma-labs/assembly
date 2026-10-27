@@ -50,7 +50,7 @@ fail to compile, then build:
 
 ```bash
 cmake --preset dev
-cmake --build --preset dev --target assembly_sandbox_missing_handlers
+cmake --build --preset dev --target sandbox_missing_handlers
 ```
 
 The diagnostics identify failed `handles_request_after` and `handles_response_after` constraints

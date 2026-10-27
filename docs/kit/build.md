@@ -200,7 +200,7 @@ Dependencies of a requested target are still built as needed.
 ```bash
 cmake --workflow --preset dev                         # configure, build selected targets, run tests
 cmake --workflow --preset complete                         # same workflow with every app
-cmake --build --preset dev --target cmake_template_sandbox_native_module  # one excluded app explicitly
+cmake --build --preset dev --target sandbox_native_module  # one excluded app explicitly
 ```
 
 `any` means every preset; `complete` names the preset that builds every app. For example,
@@ -238,7 +238,7 @@ The entry point provides:
 |---|---|
 | `nom_project_options()` | The project's options (below). Call it right after `project()`. |
 | `nom_lib(<name> [STATIC \| SHARED] [SOURCES …] [HEADERS …] [MODULES …] [BASE_DIR <dir>] [PUBLIC_DEPS …] [PRIVATE_DEPS …] [COMPILE_OPTIONS …])` | Library `<name>` plus alias `nom::<name>`. `MODULES` lists native interfaces and partitions; `SOURCES` lists implementation units and other compiled sources. File sets are rooted at `BASE_DIR` (default `core/`). Header-only macro or dependency adapters can be INTERFACE targets. Compile options are PRIVATE for compiled libraries and INTERFACE otherwise. |
-| `nom_app(<name> SOURCES … [DEPS …] [BUILD_FOR …] [COMPILE_OPTIONS …])` | Executable target `<project>_<name>`, binary `bin/<name>`; selects default build/install participation by preset; collects an adjacent `config/` directory. Compile options are PRIVATE. |
+| `nom_app(<name> SOURCES … [DEPS …] [BUILD_FOR …] [COMPILE_OPTIONS …])` | Executable target `<name>` (unique across the whole build), binary `bin/<name>`; selects default build/install participation by preset; collects an adjacent `config/` directory. Compile options are PRIVATE. |
 | `nom_python_module(<target> MODULE_NAME <name> PACKAGE <package> SOURCES … [DEPS …] [RUNTIME_LIBRARIES …])` | Linux Python extension and explicitly bundled shared libraries, installed through the `nom_python` component. |
 | `nom_c2test(<suite> SOURCES … [DEPS …] [LABELS …] [PROPERTIES …])` | Catch2 executable `<project>_<suite>`, registered with CTest and labeled `unit`; `LABELS` replaces the label, `PROPERTIES` sets other test properties. Needs `nom_find_catch2()`. |
 | `nom_library_usage_tests(<dir> [OPTIONS …])` | Integration tests: build and run a separate project using this library as an installed package and from source (see Tests). |

@@ -75,7 +75,7 @@ Target names are global in a superbuild, so every target carries its project's n
 | Project | The repo name | `project(assembly …)` |
 | Main library target | The project name, exported as `nom::<project>` | `assembly` / `nom::assembly` |
 | Other targets | `<project>_<name>` | `assembly_tests`, `config_generate` |
-| Executables | Target `<project>_<app>` with the short `OUTPUT_NAME` `<app>` (`nom_app` does this) | `assembly_relay_handler_contract` → `relay_handler_contract` |
+| Executables | `nom_app(<app>)` creates target `<app>` and binary `<app>`; choose a name unique across the whole build | `relay_handler_contract` |
 | Options and cache variables | `<PROJECT>_<NAME>`; tests and apps default to ON only when the project is top level | `ASSEMBLY_BUILD_TESTS` |
 | Kit functions | `nom_` prefix; use short names for target helpers | `nom_lib()`, `nom_app()`, `nom_c2test()` |
 | Local variables | `lower_snake_case` | `set(module_files …)` |

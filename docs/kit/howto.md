@@ -103,13 +103,21 @@ More rules and dependency boundaries: [build.md](build.md#modules).
    nom_app(<app> SOURCES main.cpp DEPS nom::<repo>)
    ```
    When `nom_build_apps` is OFF, the helper creates no target or config collection rules.
-   The target is `<repo>_<app>`; the binary is `build/<preset>/bin/<app>`. By default it joins
+   The target is `<app>`; the binary is `build/<preset>/bin/<app>`. Choose a target name unique
+   across the whole build, including enabled dependency apps. By default it joins
    every preset (`BUILD_FOR any`). Restrict its normal build and installation with:
    ```cmake
    nom_app(<app> SOURCES main.cpp DEPS nom::<repo> BUILD_FOR dev ci)
    ```
    Other presets can still build it explicitly by target name. The `complete` preset includes every
-   app regardless of this list. Use `BUILD_FOR complete` for prototypes.
+   app regardless of this list. Use `BUILD_FOR complete` for prototypes. Apply further target
+   settings using the same name, guarded because apps can be disabled:
+   ```cmake
+   if(TARGET <app>)
+       target_compile_definitions(<app> PRIVATE NOM_APP_VERBOSE=1)
+       set_target_properties(<app> PROPERTIES OUTPUT_NAME <binary_name>)
+   endif()
+   ```
 3. Add `add_subdirectory(<app>)` to `apps/CMakeLists.txt`.
 4. Put application configuration files in `apps/<app>/config/` when needed. Building any app
    declared in that directory collects the whole folder into `build/<preset>/config/<app>/`.

@@ -39,8 +39,10 @@ For an application in `apps/capture/CMakeLists.txt`:
 nom_app(capture SOURCES main.cpp DEPS nom::prices)
 ```
 
-This creates `<project>_capture`, producing `bin/capture`. An adjacent `config/` directory is
-collected and installed with the application. Add these folders through their parent's
+This creates target `capture`, producing `bin/capture`. Use `capture` directly with
+`target_*()` commands and `set_target_properties()`. Choose a name unique across the whole
+build, including enabled apps from dependencies; add an explicit prefix when needed. An
+adjacent `config/` directory is collected and installed with the application. Add these folders through their parent's
 `add_subdirectory()` calls, following the [recipes](../../docs/kit/howto.md).
 
 Both helpers accept `COMPILE_OPTIONS`, a list of compiler flags:

@@ -71,7 +71,7 @@ endfunction()
 
 # nom_app(<name> SOURCES <files> [DEPS <targets>] [BUILD_FOR <names>] [COMPILE_OPTIONS <options>])
 #
-# Target <project>_<name>, because target names are global in a superbuild. The binary is
+# Creates target <name>; callers choose names unique across the whole build. The binary is
 # bin/<name> in the project's build directory. If the app directory contains config/,
 # collect it at <top-level build>/config/<app directory> on every build. When
 # installation is enabled, install selected apps and their collected config. BUILD_FOR defaults
@@ -89,25 +89,24 @@ function(nom_app name)
     if(NOM_BUILD_PRESET STREQUAL "complete" OR "any" IN_LIST arg_BUILD_FOR OR NOM_BUILD_PRESET IN_LIST arg_BUILD_FOR)
         set(selected TRUE)
     endif()
-    set(target ${PROJECT_NAME}_${name})
-    add_executable(${target} ${arg_SOURCES})
+    add_executable(${name} ${arg_SOURCES})
     if(NOT selected)
-        set_target_properties(${target} PROPERTIES EXCLUDE_FROM_ALL TRUE)
+        set_target_properties(${name} PROPERTIES EXCLUDE_FROM_ALL TRUE)
     endif()
-    target_link_libraries(${target} PRIVATE ${arg_DEPS})
-    target_compile_features(${target} PRIVATE cxx_std_23)
+    target_link_libraries(${name} PRIVATE ${arg_DEPS})
+    target_compile_features(${name} PRIVATE cxx_std_23)
     if(arg_COMPILE_OPTIONS)
-        target_compile_options(${target} PRIVATE ${arg_COMPILE_OPTIONS})
+        target_compile_options(${name} PRIVATE ${arg_COMPILE_OPTIONS})
     endif()
-    set_target_properties(${target} PROPERTIES
+    set_target_properties(${name} PROPERTIES
         OUTPUT_NAME ${name}
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
         CXX_EXTENSIONS OFF)
-    nom_set_warnings(${target})
-    nom_set_install_library_path(${target} "${CMAKE_INSTALL_FULL_BINDIR}")
+    nom_set_warnings(${name})
+    nom_set_install_library_path(${name} "${CMAKE_INSTALL_FULL_BINDIR}")
 
     if(nom_install AND selected)
-        install(TARGETS ${target} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+        install(TARGETS ${name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     endif()
 
     set(config_source "${CMAKE_CURRENT_SOURCE_DIR}/config")
@@ -128,6 +127,6 @@ function(nom_app name)
             install(DIRECTORY "${config_destination}/" DESTINATION "config/${app_folder}")
             set_property(TARGET ${config_target} PROPERTY NOM_CONFIG_INSTALL_REGISTERED TRUE)
         endif()
-        add_dependencies(${target} ${config_target})
+        add_dependencies(${name} ${config_target})
     endif()
 endfunction()

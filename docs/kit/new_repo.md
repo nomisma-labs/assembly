@@ -64,6 +64,11 @@ repo starts without example tests; add your own code and tests with the recipes 
 Define new Nomisma library APIs in named modules and import them in apps and tests.
 Keep macro headers and third-party dependency headers where needed.
 
+Each derived repo declares its dependencies in its own `.gitmodules`, CMake target setup and
+installed-package dependency lists. Follow the [dependency recipe](howto.md#a-dependency) in
+the consuming repo. `cmake_template` supplies shared build mechanisms; it is not a registry of
+dependencies between derived repos.
+
 ## Per-repo settings
 
 - **Branch protection** on `master` (pull requests only, CI must pass): private repos need the
@@ -71,14 +76,15 @@ Keep macro headers and third-party dependency headers where needed.
 - **Private submodules in CI:** the token GitHub Actions gives each job can read only its own
   repo, so checking out one of our private repos (for example `external/config`) fails. Use an
   organization-owned GitHub App with read-only access to repository contents:
-  - before adding the first private dependency, add token support in `cmake_template` and sync
-    it into derived repos: each workflow gets a short-lived token with
+  - when private submodules are needed in CI, add generic token support in `cmake_template`
+    and sync it into the consuming repos: each workflow gets a short-lived token with
     `actions/create-github-app-token` and passes it to `actions/checkout` (`token:`, with
     `submodules: recursive`);
   - the App's ID and private key are Actions secrets. On the Free plan private repos can't use
     organization secrets, so each repo needs its own copy.
 
-  The template itself has only public submodules, so it doesn't need this yet.
+  This authentication is shared CI infrastructure; individual dependencies stay in the
+  consuming repos. The template itself has only public submodules, so it doesn't need this yet.
 
 ## Keeping repos in sync
 
