@@ -6,6 +6,8 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-27
+
 ### Changed
 
 - Sync the shared build infrastructure with cmake_template v0.11.1; `nom_app()` uses the
