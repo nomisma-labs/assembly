@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Alexey Tkachenko
 // SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 
-#include <functional> // events_delegate_t uses std::function.
-#include <type_traits>
+import std;
 
 import nom.assembly;
 

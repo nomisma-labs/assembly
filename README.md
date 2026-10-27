@@ -9,6 +9,12 @@ by `nom.assembly`. Its only library dependency is Metal v2.1.4, pinned in `exter
 provided as `nom::metal` by [cmake/assembly/metal.cmake](cmake/assembly/metal.cmake).
 <!-- repo-description:end -->
 
+C++ builds and consumers use CMake 4.4.x, Ninja, GCC 16 or Clang 22, and libstdc++ 16
+standard-library module sources. Enable std module detection before the consumer's first
+`project()` and call `nom_enable_std_modules(target)` on each compiled consumer target.
+See [standard-library module setup](docs/kit/build.md#modules), including package consumers
+without the kit. Macro headers remain textual includes before imports.
+
 **Start here: [How to understand Assembly/Relay applications](docs/assembly/understanding_applications.md).**
 Read the node list, then ask five questions about context services, event handlers, traits,
 configuration, and event origins.

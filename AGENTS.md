@@ -21,6 +21,6 @@ Rules for this repo alone follow below.
   `nom_metal` in `nom_install_package(DEPENDENCIES …)` for exported targets that use it.
 - The public C++ API uses namespace `nom`, overriding the generic repository namespace
   convention. Keep module name `nom.assembly` and CMake target `nom::assembly`.
-- Unit suites and integration consumers import `nom.assembly`. Catch2 macros and standard-library
-  declarations come from headers; Metal stays in the module units' global fragments.
+- Unit suites and integration consumers import `nom.assembly` and use `import std;` for
+  standard-library declarations. Catch2 macros stay in headers; Metal stays in the module units' global fragments.
   See [docs/assembly/tests.md](docs/assembly/tests.md) for the teaching suites.

@@ -3,9 +3,6 @@
 
 module;
 
-#include <type_traits>
-#include <utility>
-
 #include <metal/lambda.hpp>
 #include <metal/list/append.hpp>
 #include <metal/list/at.hpp>
@@ -18,6 +15,8 @@ module;
 #include <metal/number/number.hpp>
 
 export module nom.assembly:relay;
+
+import std;
 
 import :assembly_impl;
 import :custom_traits;

@@ -1,14 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Alexey Tkachenko
 // SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 
-module;
-
-#include <concepts>
-#include <functional>
-#include <type_traits>
-#include <utility>
-
 export module nom.assembly:delegate;
+
+import std;
 
 export namespace nom
 {

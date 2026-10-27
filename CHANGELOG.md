@@ -6,6 +6,13 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+### Changed
+
+- Sync the shared build kit to cmake_template v0.11.2 and adopt `import std;` in C++
+  modules and consumers, retaining macro and third-party header boundaries.
+- Require CMake 4.4.x and enable standard-library module detection before `project()`
+  in both the repository and source/installed-package consumer projects.
+
 ## [0.3.0] - 2026-10-27
 
 ### Changed

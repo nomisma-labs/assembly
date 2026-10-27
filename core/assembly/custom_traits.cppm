@@ -1,11 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Alexey Tkachenko
 // SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
 
-module;
-
-#include <type_traits>
-
 export module nom.assembly:custom_traits;
+
+import std;
 
 namespace nom::detail
 {

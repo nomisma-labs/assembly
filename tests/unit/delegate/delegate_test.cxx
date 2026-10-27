@@ -3,14 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <concepts>
-#include <functional>
-#include <memory>
-#include <string>
-#include <type_traits>
-#include <utility>
-#include <variant>
-#include <vector>
+import std;
 
 import nom.assembly;
 

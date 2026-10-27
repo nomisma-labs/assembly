@@ -12,7 +12,7 @@ Read them in this order, running a suite after reading its node and assembly def
 | [`complex_relay_test.cxx`](../../tests/unit/complex_relay/complex_relay_test.cxx) | A complete order workflow combining events, shared services, configuration, an assembly trait and an external callback interface |
 
 Each suite imports `nom.assembly`, so its lessons also check the exported
-API. Catch2 macros and standard-library declarations still come from headers. From the
+API. Standard-library declarations use `import std;`; Catch2 macros stay in headers. From the
 repository root:
 
 ```bash
