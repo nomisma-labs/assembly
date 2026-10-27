@@ -7,7 +7,7 @@ include(cmake/kit/std_modules.cmake)
 
 # The version lives only here; releases are tagged v<version> (docs/kit/build.md#versioning).
 project(assembly
-    VERSION 0.3.0
+    VERSION 0.3.1
     DESCRIPTION "Static application composition, bidirectional event routing and callback interfaces"
     LANGUAGES CXX)
 
