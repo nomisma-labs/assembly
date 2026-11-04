@@ -67,6 +67,31 @@ When implementing, verify origins at the first, middle and last node; delivery t
 when it has a handler; skipped non-handlers; normal forwarding/suppression; and terminator
 re-entry without recursive dispatch or lost downstream delivery.
 
+### Alternative: inherit the assembly storage in relay
+
+Consider making `relay<Assembly>` inherit the node/context storage instead of owning the
+`body assembly_` member. `Assembly` itself is currently a type descriptor; deriving from
+that descriptor alone would not make nodes base subobjects of the relay. The candidate
+must include `Assembly::body` and the request/response suppressors in its base hierarchy.
+
+A node could then recover its containing relay through the inheritance chain, possibly
+through a helper, and call its normal `request(...)` entry point. This could provide
+root-originated requests without storing an owner pointer, while preserving the same
+selective routing and synchronous dispatch.
+
+**Status:** Deferred design option; compilation feasibility has not been verified.
+Investigate possible recursive template instantiation and incomplete-type constraints
+when node definitions, final assembly traits and `relay<Traits>` depend on one another.
+A compile failure would need a minimal reproducer before attributing it to inheritance
+itself; separating storage declarations from dispatch definitions may be relevant.
+Also check cast accessibility, ambiguous inherited members, suppressor placement,
+construction/context lifetime and compatibility with existing `ctx` and forwarding calls.
+
+Inheritance alone does not solve stop-handler re-entry: initiating a root request and
+handling that request must remain separate, as described above. Use the same routing
+and re-entry checks when comparing this option with `request_from_start`. Keep it here
+as an alternative regardless of the outcome of an initial compilation experiment.
+
 Relevant code and contract: [relay.cppm](core/assembly/relay.cppm),
 [assembly_impl.cppm](core/assembly/assembly_impl.cppm),
 [event routing](docs/assembly/framework.md#following-an-event).
