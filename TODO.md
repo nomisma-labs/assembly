@@ -92,6 +92,6 @@ handling that request must remain separate, as described above. Use the same rou
 and re-entry checks when comparing this option with `request_from_start`. Keep it here
 as an alternative regardless of the outcome of an initial compilation experiment.
 
-Relevant code and contract: [relay.cppm](core/assembly/relay.cppm),
-[assembly_impl.cppm](core/assembly/assembly_impl.cppm),
+Relevant code and contract: [relay.cppm](src/assembly/relay.cppm),
+[assembly_impl.cppm](src/assembly/assembly_impl.cppm),
 [event routing](docs/assembly/framework.md#following-an-event).

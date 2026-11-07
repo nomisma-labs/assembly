@@ -16,18 +16,18 @@ The library has three main facilities:
 
 | Facility | Responsibility | Module source |
 |---|---|---|
-| `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../../core/assembly/assembly_impl.cppm) |
-| `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../../core/assembly/relay.cppm) |
-| `delegate` | Connect a producer to callable handlers | [`delegate.cppm`](../../core/assembly/delegate.cppm) |
+| `assembly<Traits, Nodes...>` | Describe nodes and compose their context and storage | [`assembly_impl.cppm`](../../src/assembly/assembly_impl.cppm) |
+| `relay<Assembly>` | Own an assembly and route typed calls through it | [`relay.cppm`](../../src/assembly/relay.cppm) |
+| `delegate` | Connect a producer to callable handlers | [`delegate.cppm`](../../src/assembly/delegate.cppm) |
 
 Supporting definitions include `type_list` for compile-time type lists,
-[`apply_custom_traits_t`](../../core/assembly/custom_traits.cppm) for applying custom traits,
+[`apply_custom_traits_t`](../../src/assembly/custom_traits.cppm) for applying custom traits,
 and `event_suppressors` for events without a final consumer. `events_delegate_t` and `delegate_ref`
 provide additional delegate forms.
 
 All public names are in `nom`: for example, `nom::assembly<Traits, Nodes...>` and
 `nom::relay<Assembly>`. Import `nom.assembly`; its
-[primary interface](../../core/assembly/assembly.cppm) re-exports the partitions above.
+[primary interface](../../src/assembly/assembly.cppm) re-exports the partitions above.
 The implementation uses Metal **v2.1.4** headers, pinned in `external/metal`, for
 compile-time type lists. The exported alias `nom::type_list<Types...>` lets applications
 declare these lists without including Metal headers. Applications needing Metal algorithms

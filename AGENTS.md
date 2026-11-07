@@ -14,7 +14,7 @@ Rules for this repo alone follow below.
 
 ## This repo
 
-- `core/assembly/`: the `nom.assembly` module, with assembly_impl, custom_traits, relay and delegate interface partitions.
+- `src/assembly/`: the `nom.assembly` module, with assembly_impl, custom_traits, relay and delegate interface partitions.
 - `cmake/assembly/`: this repo's own CMake files. `metal.cmake` defines `nom_find_metal()`, which
   provides `nom::metal` from the `external/metal` submodule (v2.1.4) and installs its headers and
   license as the `nom_metal` package. Link `nom::metal` where Metal headers are needed, and list
