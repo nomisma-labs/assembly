@@ -48,3 +48,9 @@ Everyday commands, the presets and what bootstrap checks: [docs/kit/build.md](do
 
 Agents start at [AGENTS.md](AGENTS.md), people at [docs/](docs/README.md). Adding a library, an
 app, tests or a dependency: [docs/kit/howto.md](docs/kit/howto.md). Releases: [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+This project is licensed under [MIT](LICENSE). Copyright belongs to Alexey Tkachenko.
+The synchronized build kit retains its [MIT notice](cmake/kit/LICENSE); third-party
+dependencies retain their own licenses.

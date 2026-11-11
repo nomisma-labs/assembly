@@ -6,6 +6,17 @@ and versions follow [Semantic Versioning](https://semver.org); how to release:
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-11
+
+### Changed
+
+- License project-owned code and documentation under MIT, retaining
+  Alexey Tkachenko's copyright. Third-party dependencies retain their own licenses.
+- Synchronize cmake_template v0.14.0 and record the repository license policy;
+  the shared kit retains MIT independently of the project selection.
+- Include the project license in installed artifacts alongside the applicable
+  toolchain and dependency notices.
+
 ## [0.5.0] - 2026-11-08
 
 ### Changed

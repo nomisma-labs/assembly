@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 Alexey Tkachenko
-# SPDX-License-Identifier: LicenseRef-Nomisma-Labs-Proprietary
+# SPDX-License-Identifier: MIT
 
 nom_lib(assembly IMPORT_STD
     MODULES assembly.cppm assembly_impl.cppm custom_traits.cppm relay.cppm delegate.cppm
